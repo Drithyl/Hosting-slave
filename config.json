@@ -1,0 +1,30 @@
+{
+  "name": "testSlave",
+  "ip": "localhost",
+  "masterPort": 3000,
+  "gamePortRange":
+  {
+    "first": 6000,
+    "last": 10000
+  },
+  "token": "test",
+  "capacity": 20,
+  "gameHostMsDelay": 250,
+  "generalLogPath": "H:/Bot/log.txt",
+  "uploadLogPath": "H:/Bot/uploadLog.txt",
+  "errorLogPath": "H:/Bot/errorLog.txt",
+  "gameDataSavePath": "H:/Bot/games.json",
+  "statusPageBasePath": "H:/Bot/statuspages",
+  "dom4RootPath": "H:/Steam/steamapps/common/Dominions4",
+  "dom4ExePath": "H:/Steam/steamapps/common/Dominions4/Dominions4.exe",
+  "dom4DataPath": "C:/Users/MistZ/AppData/Roaming/Dominions4",
+  "dom5RootPath": "H:/Steam/steamapps/common/Dominions5",
+  "dom5ExePath": "H:/Steam/steamapps/common/Dominions5/Dominions5.exe",
+  "dom5DataPath": "C:/Users/MistZ/AppData/Roaming/Dominions5",
+  "coe4RootPath": "H:/Steam/steamapps/common/ConquestOfElysium4",
+  "coe4RootPath": "H:/Steam/steamapps/common/ConquestOfElysium4/coe4.exe",
+  "coe4DataPath": "C:/Users/MistZ/AppData/Roaming/coe4",
+  "pathToGameSaveBackup": "H:/Bot/Backups/savedgames",
+  "newTurnsBackupDirName": "New Turns",
+  "latestTurnBackupDirName": "Latest"
+}
