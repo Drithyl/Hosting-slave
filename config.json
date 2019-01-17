@@ -29,6 +29,7 @@
   "coe4DataPath": "",
 
   "pathToGameSaveBackup": "",
+  
   "newTurnsBackupDirName": "New Turns",
   "latestTurnBackupDirName": "Latest",
   "gameHostMsDelay": 250
