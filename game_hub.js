@@ -9,6 +9,13 @@ const kill = require("./kill_instance.js").kill;
 * {name, port, gameType, instance}  *
 *     Indexed by port numbers       *
 ************************************/
+//Create the file if it doesn't exist
+if (fs.existsSync(config.gameDataSavePath) === false)
+{
+  rw.writeToGeneralLog(`Game Data file not found; creating a new one: ${config.gameDataSavePath}`);
+  fs.writeFileSync(config.gameDataSavePath, "{}");
+}
+
 const games = require(config.gameDataSavePath);
 
 //this will be used to set a delay between host requests
