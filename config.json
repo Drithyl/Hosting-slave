@@ -31,5 +31,5 @@
   "pathToGameSaveBackup": "",
   "newTurnsBackupDirName": "New Turns",
   "latestTurnBackupDirName": "Latest",
-  "gameHostMsDelay": 250,
+  "gameHostMsDelay": 250
 }
