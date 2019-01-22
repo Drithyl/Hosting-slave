@@ -1,6 +1,7 @@
 {
   "name": "",
   "ip": "",
+  "masterIP": "",
   "masterPort": 3000,
   "gamePortRange":
   {
@@ -29,7 +30,7 @@
   "coe4DataPath": "",
 
   "pathToGameSaveBackup": "",
-  
+
   "newTurnsBackupDirName": "New Turns",
   "latestTurnBackupDirName": "Latest",
   "gameHostMsDelay": 250

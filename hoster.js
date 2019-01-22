@@ -28,7 +28,7 @@ module.exports.reservePort = function(cb)
   }
 
   reservedPorts.push(reservedPort);
-  cb(null, reservedPort);
+  cb(null, reservedPort, config.ip);
 };
 
 module.exports.releasePort = function(port)

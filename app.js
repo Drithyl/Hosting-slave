@@ -9,6 +9,8 @@ const downloader = require("./file_downloader.js");
 var gameHub = require("./game_hub.js");
 var hoster = require("./hoster.js").init(gameHub);
 
+rw.writeToGeneralLog(`This is a test object:`, {here: "who knows what's there", there: 999});
+
 /****************************************
 *   SOCKET CONNECTION TO MASTER SERVER  *
 ****************************************/
@@ -26,7 +28,7 @@ var socket = io.connect(`http://${config.ip}:${config.masterPort}/`,
 socket.on("init", function(data, serverCb)
 {
   rw.writeToGeneralLog("Received the init event from master server. Sending authentication attempt.");
-  serverCb({name: config.name, hostedGameNames: gameHub.getGameNames(), capacity: config.capacity, token: config.token});
+  serverCb({name: config.name, hostedGameNames: gameHub.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip});
 });
 
 //Received when the master server validates the authentication,
