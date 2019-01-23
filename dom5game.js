@@ -177,16 +177,25 @@ module.exports.restart = function(data, cb)
         return;
       }
 
-      module.exports.host(game.port, game.args, game, function(err)
+      fs.unlink(`${config.statusPageBasePath}/${game.name}_status`, function(err)
       {
         if (err)
         {
-          cb(`The data was restarted, but the game's process could not be launched after killing it. Try to use the launch command to do so manually.`);
+          cb(`The data was restarted, but the old statuspage file could not be deleted. Try to reboot the game by using the kill and launch commands to do so manually.`);
+          return;
         }
 
-        else cb(null);
-      })
-    })
+        module.exports.host(game.port, game.args, game, function(err)
+        {
+          if (err)
+          {
+            cb(`The data was restarted, but the game's process could not be launched after killing it. Try to use the launch command to do so manually.`);
+          }
+
+          else cb(null);
+        });
+      });
+    });
   });
 };
 
