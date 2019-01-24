@@ -268,22 +268,25 @@ module.exports.readDirContent = function(path, extensionFilter, cb)
 
 module.exports.writeToGeneralLog = function(...inputs)
 {
-	module.exports.log(config.generalLogPath, arguments[0]);
+	module.exports.log(config.generalLogPath, inputs);
 };
 
 module.exports.writeToUploadLog = function(...inputs)
 {
-	module.exports.log(config.uploadLogPath, arguments[0]);
+	module.exports.log(config.uploadLogPath, [...inputs]);
 };
 
 module.exports.log = function(path, ...inputs)
 {
 	var msg = module.exports.timestamp() + "\n";
+	console.log(`Inputs received: ${inputs}. Type is ${typeof inputs}.`);
 
 	inputs.forEach(function(input)
 	{
+		console.log(`Looping through: <${input}>`);
 		if (typeof input === "string")
 		{
+			console.log(`Is a String.`);
 			//add tab characters to each line so that they are all indented relative to the timestamp
 			input.split("\n").forEach(function(line)
 			{
@@ -291,7 +294,11 @@ module.exports.log = function(path, ...inputs)
 			});
 		}
 
-		else msg += `\t${JSON.stringify(input, null, 2)}\n`;
+		else
+		{
+			console.log(`Is not a String.`);
+			msg += `\t${JSONStringify(input)}\n`;
+		}
 	});
 
 	console.log(`${msg}\n`);
@@ -312,7 +319,7 @@ module.exports.logError = function(values, ...inputs)
 
 	if (typeof values === "object")
 	{
-		errMsg += `Values: \n\t${JSON.stringify(values, null, 2)}\n\n`;
+		errMsg += `Values: \n\t${JSONStringify(values)}\n\n`;
 	}
 
 	//assume first parameter is just more inputs instead of values to print
@@ -329,7 +336,7 @@ module.exports.logError = function(values, ...inputs)
 			});
 		}
 
-		else errMsg += `\t${JSON.stringify(input, null, 2)}\n`;
+		else errMsg += `\t${JSONStringify(input)}\n`;
 	});
 
 	console.log(`${errMsg}\n`);
@@ -368,7 +375,7 @@ module.exports.traceError = function(...inputs)
 			});
 		}
 
-		else msg += `\t${JSON.stringify(input, null, 2)}\n`;
+		else msg += `\t${JSONStringify(input)}\n`;
 	});
 
 	console.log(`${msg}\n`);
@@ -434,5 +441,31 @@ function objToJSON(obj, keysToFilter = {"instance": null, "guild": "id", "channe
 		}
 	}
 
-	return JSON.stringify(copyObj);
+	return JSONStringify(copyObj);
+}
+
+//Stringify that prevents circular references taken from https://antony.fyi/pretty-printing-javascript-objects-as-json/
+function JSONStringify(object, spacing = 2)
+{
+	var cache = [];
+
+	//custom replacer function gets around the circular reference errors by discarding them
+	var str = JSON.stringify(object, function(key, value)
+	{
+		if (typeof value === "object" && value != null)
+		{
+			//value already found before, discard it
+			if (cache.indexOf(value) !== -1)
+			{
+				return;
+			}
+
+			//not found before, store this value for reference
+			else cache.push(value);
+		}
+	}, spacing);
+
+	//enable garbage collection
+	cache = null;
+	return str;
 }
