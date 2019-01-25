@@ -334,7 +334,7 @@ function writeMapFiles(zipfile, entries, gameType, cb)
   if (errors.length > 0)
   {
     rw.writeToUploadLog(`No map files have been written due to an existing file conflict.`);
-    cb(`One or more files contained inside the .zip file already existed in the maps folder. None has been extracted to prevent conflicts. See the details below:\n\n${errors}`);
+    cb(`One or more files contained inside the .zip file already existed in the maps folder. See the details below:\n\n${errors}`);
     return;
   }
 
@@ -414,7 +414,7 @@ function writeModFiles(zipfile, entries, gameType, cb)
   if (errors.length > 0)
   {
     rw.writeToUploadLog(`No mod files have been written due to an existing file conflict.`);
-    cb(`One or more files contained inside the .zip file already existed in the mods folder. None has been extracted to prevent conflicts. See the details below:\n\n${errors}`);
+    cb(`One or more files contained inside the .zip file already existed in the mods folder. See the details below:\n\n${errors}`);
     return;
   }
 
