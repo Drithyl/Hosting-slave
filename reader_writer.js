@@ -268,25 +268,22 @@ module.exports.readDirContent = function(path, extensionFilter, cb)
 
 module.exports.writeToGeneralLog = function(...inputs)
 {
-	module.exports.log(config.generalLogPath, inputs);
+	module.exports.log(config.generalLogPath, ...inputs);
 };
 
 module.exports.writeToUploadLog = function(...inputs)
 {
-	module.exports.log(config.uploadLogPath, [...inputs]);
+	module.exports.log(config.uploadLogPath, ...inputs);
 };
 
 module.exports.log = function(path, ...inputs)
 {
 	var msg = module.exports.timestamp() + "\n";
-	console.log(`Inputs received: ${inputs}. Type is ${typeof inputs}.`);
 
 	inputs.forEach(function(input)
 	{
-		console.log(`Looping through: <${input}>`);
 		if (typeof input === "string")
 		{
-			console.log(`Is a String.`);
 			//add tab characters to each line so that they are all indented relative to the timestamp
 			input.split("\n").forEach(function(line)
 			{
@@ -296,7 +293,6 @@ module.exports.log = function(path, ...inputs)
 
 		else
 		{
-			console.log(`Is not a String.`);
 			msg += `\t${JSONStringify(input)}\n`;
 		}
 	});
@@ -461,8 +457,11 @@ function JSONStringify(object, spacing = 2)
 			}
 
 			//not found before, store this value for reference
-			else cache.push(value);
+			cache.push(value);
 		}
+
+		return value;
+
 	}, spacing);
 
 	//enable garbage collection
