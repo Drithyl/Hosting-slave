@@ -101,6 +101,7 @@ module.exports.downloadMod = function(fileId, gameType, cb)
         {
           //select only the relevant files to extract (directories are included
           //so that the mod structure can be preserved properly)
+          //directories finish their name in /
           if (modExtensionTest.test(entry.fileName) === true || /\/$/.test(entry.fileName) === true)
           {
             rw.writeToUploadLog(`Keeping file ${entry.fileName}.`);
@@ -234,21 +235,6 @@ module.exports.downloadMap = function(fileId, gameType, cb)
   });
 };
 
-/*setTimeout(function()
-{
-  console.log("Downloading Mod");
-  module.exports.downloadMod("1fV3rco_JMK6C1QaC8hB4EzfWlzq3CCfK", "dom5", function(err, results)
-  {
-    if (err)
-    {
-      console.log("error occurred:");
-      console.log(err);
-    }
-
-    else console.log(results);
-  })
-}, 3000);*/
-
 function getMetadata(fileId, cb)
 {
   googleDriveAPI.getFileMetadata(fileId, null, function(err, metadata)
@@ -361,12 +347,11 @@ function writeMapFiles(zipfile, entries, gameType, cb)
 
     zipfile.openReadStream(entry, function(err, readStream)
     {
-      let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
-
       //if error, add to error messages and continue looping
       if (err)
       {
         errors.push(err);
+        rw.writeToUploadLog(`Error opening a readStream at path ${dataPath}/${entry.fileName}.`);
         loop();
         return;
       }
@@ -375,6 +360,7 @@ function writeMapFiles(zipfile, entries, gameType, cb)
       {
         //if error, add to error messages and continue looping
         errors.push(err);
+        rw.writeToUploadLog(`Error occurred during readStream for file ${entry.fileName}:`, err);
         loop();
         return;
       });
@@ -385,6 +371,8 @@ function writeMapFiles(zipfile, entries, gameType, cb)
         rw.writeToUploadLog(`Map file ${entry.fileName} written.`);
         loop();
       });
+
+      let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
 
       //write the stream to the correspondent path
       readStream.pipe(writeStream);
@@ -445,6 +433,7 @@ function writeModFiles(zipfile, entries, gameType, cb)
       //if it exists, ignore and continue looping
       if (fs.existsSync(`${dataPath}/${entry.fileName}`) === true)
       {
+        rw.writeToUploadLog(`The directory ${entry.fileName} already exists.`);
         loop();
         return;
       }
@@ -453,6 +442,8 @@ function writeModFiles(zipfile, entries, gameType, cb)
       {
         if (err)
         {
+          errors.push(err);
+          rw.writeToUploadLog(`Error creating the directory ${entry.fileName}.`);
           cb(`Error creating the directory ${entry.fileName}.`);
           return;
         }
@@ -466,12 +457,11 @@ function writeModFiles(zipfile, entries, gameType, cb)
     {
       zipfile.openReadStream(entry, function(err, readStream)
       {
-        let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
-
         //if error, add to error messages and continue looping
         if (err)
         {
           errors.push(err);
+          rw.writeToUploadLog(`Error opening a readStream at path ${dataPath}/${entry.fileName}.`);
           loop();
           return;
         }
@@ -480,6 +470,7 @@ function writeModFiles(zipfile, entries, gameType, cb)
         {
           //if error, add to error messages and continue looping
           errors.push(err);
+          rw.writeToUploadLog(`Error occurred during readStream for file ${entry.fileName}:`, err);
           loop();
           return;
         });
@@ -490,6 +481,8 @@ function writeModFiles(zipfile, entries, gameType, cb)
           rw.writeToUploadLog(`Mod file ${entry.fileName} written.`);
           loop();
         });
+
+        let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
 
         //write the stream to the correspondent path
         readStream.pipe(writeStream);
