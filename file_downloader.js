@@ -10,10 +10,14 @@ const googleDriveAPI = require("./google_drive_api/index.js");
 const steamWorkshopAPI = require("./steam_workshop_api/index.js");
 
 //These are the extensions expected in the collection of map files
-const mapExtensionTest = new RegExp("(\.map)|(\.rgb)|(\.tga)$");
+const mapExtensionTest = new RegExp("(\.map)|(\.rgb)|(\.tga)$", "i");
+const mapDataExtensionRegexp = new RegExp("\.map$", "i");
+const mapImageExtensionRegexp = new RegExp("(\.rgb)|(\.tga)$", "i");
 
 //These are the extensions expected in the collection of mod files
-const modExtensionTest = new RegExp("(\.dm)|(\.rgb)|(\.tga)$");
+const modExtensionTest = new RegExp("(\.dm)|(\.rgb)|(\.tga)$", "i");
+const modDataExtensionRegexp = new RegExp("\.dm$", "i");
+const modSpriteExtensionRegexp = new RegExp("(\.rgb)|(\.tga)$", "i");
 
 //The temporary path in which zips are piped to, then deleted once extracted
 const tmpPath = `tmp`;
@@ -30,17 +34,23 @@ if (fs.existsSync(tmpPath) === false)
 module.exports.downloadMod = function(fileId, gameType, cb)
 {
   let modEntries = [];
+  let modDataFilenames = [];
 
   //configure the final execution of the callback to delete any tmp files.
   //done this way so we don't have to add deleteTmpFile() to every step of the
   //callback chain below
   let extendedCb = function()
   {
+    let args = arguments;
+    console.log(`DEBUG: deleting tmp file.`);
     rw.writeToUploadLog(`Deleting temp zipfile ${fileId}...`);
-    deleteTmpFile(fileId);
-    cb.apply(this, arguments);  //apply the arguments that the cb got called with originally
+    deleteTmpFile(fileId, function(err)
+    {
+      cb.apply(this, args);  //apply the arguments that the cb got called with originally
+    });
   };
 
+  console.log(`DEBUG: getting Metadata.`);
   rw.writeToUploadLog(`Obtaining metadata of ${gameType} mod file id ${fileId}...`);
 
   //obtain the file metadata (name, extension, size) first and then check that it qualifies to be downloaded
@@ -53,11 +63,13 @@ module.exports.downloadMod = function(fileId, gameType, cb)
       return;
     }
 
+    console.log(`DEBUG: getting success.`);
     rw.writeToUploadLog(`Metadata of ${gameType} mod file id ${fileId} obtained:\n`, metadata);
 
     //The fileExtension property does not include the "." at the beginning of it
     if (metadata.fileExtension !== "zip")
     {
+      console.log(`DEBUG: not a zipfile.`);
       rw.writeToUploadLog(`Mod file id ${fileId} is not a zipfile.`);
       extendedCb("Only .zip files are supported. Please send the file id of a .zip file so it can be unzipped into the proper directory.");
       return;
@@ -66,11 +78,13 @@ module.exports.downloadMod = function(fileId, gameType, cb)
     //won't support map zips of over 25MB (metadata size is in bytes)
     if (metadata.size > modZipMaxSize)
     {
+      console.log(`DEBUG: file too big.`);
       rw.writeToUploadLog(`Mod file id ${fileId} has a size of ${metadata.size}, which is beyond the limit of ${modZipMaxSize}.`);
       extendedCb(`For bandwith reasons, your file cannot be over ${modZipMaxSize * 0.000001}MB in size. Please choose a smaller file.`);
       return;
     }
 
+    console.log(`DEBUG: getting zipfile.`);
     rw.writeToUploadLog(`Downloading and fetching ${gameType} mod zipfile ${fileId}...`);
 
     //obtain the zipfile in proper form through yauzl
@@ -83,7 +97,9 @@ module.exports.downloadMod = function(fileId, gameType, cb)
         return;
       }
 
+      console.log(`DEBUG: getting zipfile success`);
       rw.writeToUploadLog(`Fetching entries of ${gameType} mod zipfile ${fileId}...`);
+      console.log(`DEBUG: getting zipentries`);
 
       //obtain the entries (files) in the zipfile, and filter them by extension
       getZipEntries(zipfile, function(err, entries)
@@ -97,14 +113,25 @@ module.exports.downloadMod = function(fileId, gameType, cb)
 
         rw.writeToUploadLog(`Filtering entries by extension...`);
 
+        console.log(`DEBUG: filtering zip entries by extension.`);
+
         entries.forEach(function(entry)
         {
           //select only the relevant files to extract (directories are included
           //so that the mod structure can be preserved properly)
           //directories finish their name in /
-          if (modExtensionTest.test(entry.fileName) === true || /\/$/.test(entry.fileName) === true)
+          if (modDataExtensionRegexp.test(entry.fileName) === true)
           {
-            rw.writeToUploadLog(`Keeping file ${entry.fileName}.`);
+            console.log(`DEBUG: keeping data file ${entry.fileName}.`);
+            rw.writeToUploadLog(`Keeping data file ${entry.fileName}.`);
+            modEntries.push(entry);
+            modDataFilenames.push(entry.fileName);
+          }
+
+          else if (modDataExtensionRegexp.test(entry.fileName) === true || /\/$/.test(entry.fileName) === true)
+          {
+            console.log(`DEBUG: keeping sprite file ${entry.fileName}.`);
+            rw.writeToUploadLog(`Keeping sprite file ${entry.fileName}.`);
             modEntries.push(entry);
           }
 
@@ -112,6 +139,7 @@ module.exports.downloadMod = function(fileId, gameType, cb)
         });
 
         rw.writeToUploadLog(`Writing mod entries to disk...`);
+        console.log(`DEBUG: writing mod files`);
 
         //write the file data from all entries obtained from the zipfile
         writeModFiles(zipfile, modEntries, gameType, function(err, failedFileErrors)
@@ -123,8 +151,9 @@ module.exports.downloadMod = function(fileId, gameType, cb)
             return;
           }
 
+          console.log(`DEBUG: mod files written successfully`);
           rw.writeToUploadLog(`Entries written successfully.`);
-          extendedCb(null, failedFileErrors);
+          extendedCb(null, failedFileErrors, modDataFilenames);
         });
       });
     });
@@ -136,6 +165,7 @@ module.exports.downloadMod = function(fileId, gameType, cb)
 module.exports.downloadMap = function(fileId, gameType, cb)
 {
   let mapEntries = [];
+  let mapDataFilenames = [];
 
   //configure the final execution of the callback to delete any tmp files.
   //done this way so we don't have to add deleteTmpFile() to every step of the
@@ -206,9 +236,16 @@ module.exports.downloadMap = function(fileId, gameType, cb)
         entries.forEach(function(entry)
         {
           //select only the relevant files to extract
-          if (mapExtensionTest.test(entry.fileName) === true)
+          if (mapDataExtensionRegexp.test(entry.fileName) === true)
           {
-            rw.writeToUploadLog(`Keeping file ${entry.fileName}.`);
+            rw.writeToUploadLog(`Keeping data file ${entry.fileName}.`);
+            mapEntries.push(entry);
+            mapDataFilenames.push(entry.fileName);
+          }
+
+          else if (mapImageExtensionRegexp.test(entry.fileName) === true)
+          {
+            rw.writeToUploadLog(`Keeping image file ${entry.fileName}.`);
             mapEntries.push(entry);
           }
 
@@ -228,7 +265,7 @@ module.exports.downloadMap = function(fileId, gameType, cb)
           }
 
           rw.writeToUploadLog(`Entries written successfully`);
-          extendedCb(null, failedFileErrors);
+          extendedCb(null, failedFileErrors, mapDataFilenames);
         });
       });
     });
@@ -241,6 +278,7 @@ function getMetadata(fileId, cb)
   {
     if (err)
     {
+      console.log(`DEBUG: getting Metadata error`, err);
       cb(err);
     }
 
@@ -256,17 +294,20 @@ function getZipfile(fileId, cb)
   {
     if (err)
     {
+      console.log(`DEBUG: getting zipfile error`, err);
       rw.writeToUploadLog(`File id ${fileId} could not be downloaded due to an error:\n`, err);
       cb(err);
       return;
     }
 
+    console.log(`DEBUG: yauzl.open starting`);
     rw.writeToUploadLog(`File ${fileId}.zip downloaded.`);
 
     yauzl.open(path, {lazyEntries: true, autoClose: false}, function(err, zipfile)
     {
       if (err)
       {
+        console.log(`DEBUG: yauzl open error`, err);
         cb(err);
         return;
       }
@@ -285,11 +326,13 @@ function getZipEntries(zipfile, cb)
 
   zipfile.on("error", function(err)
   {
+    console.log(`DEBUG: readEntry error`,err);
     cb(err);
   });
 
   zipfile.on("entry", function(entry)
   {
+    console.log(`DEBUG: entry read, pushing`);
     entries.push(entry);
     zipfile.readEntry();
   });
@@ -297,6 +340,7 @@ function getZipEntries(zipfile, cb)
   //last entry was read, we can callback now
   zipfile.on("end", function()
   {
+    console.log(`DEBUG: readEntry end`);
     cb(null, entries);
   });
 }
@@ -391,8 +435,10 @@ function writeModFiles(zipfile, entries, gameType, cb)
   //overwrites, so that it's not easy to upload improper sprites to hijack a mod
   entries.forEach(function(entry, index)
   {
+    console.log(`DEBUG: looping through ${entry.fileName}`);
     if (/\.dm$/.test(entry.fileName) === true && fs.existsSync(`${dataPath}/${entry.fileName}`) === true)
     {
+      console.log(`DEBUG: already exists.`);
       rw.writeToUploadLog(`The .dm file ${entry.fileName} already exists; it will not be replaced.`);
       errors.push(`The .dm file ${entry.fileName} already exists; it will not be replaced, as this could cause issues with ongoing games using it. If you're uploading a new version of the mod, change the name of the .dm file adding the version number so it doesn't conflict.`);
     }
@@ -401,8 +447,8 @@ function writeModFiles(zipfile, entries, gameType, cb)
   //found files that already exist, do not write any file
   if (errors.length > 0)
   {
-    rw.writeToUploadLog(`No mod files have been written due to an existing file conflict.`);
-    cb(`One or more files contained inside the .zip file already existed in the mods folder. See the details below:\n\n${errors}`);
+    rw.writeToUploadLog(`.dm files cannot be overwritten, skipping those.`);
+    cb(`One or more .dm files contained inside the .zip file already existed in the mods folder and will not be overwritten. See the details below:\n\n${errors}`);
     return;
   }
 
@@ -412,6 +458,7 @@ function writeModFiles(zipfile, entries, gameType, cb)
   {
     if (entries.length < 1)
     {
+      console.log(`DEBUG: finished writing entries.`);
       zipfile.close();
 
       if (errors.length < 1)
@@ -426,28 +473,34 @@ function writeModFiles(zipfile, entries, gameType, cb)
     }
 
     let entry = entries.shift();
+    console.log(`DEBUG: looping through ${entry.fileName}.`);
 
     //fileName ends in /, therefore it's a directory. Create it if it doesn't exist to preserve mod structure
     if (/\/$/.test(entry.fileName) === true)
     {
+      console.log(`DEBUG: this is a directory.`);
       //if it exists, ignore and continue looping
       if (fs.existsSync(`${dataPath}/${entry.fileName}`) === true)
       {
+        console.log(`DEBUG: directory already exists.`);
         rw.writeToUploadLog(`The directory ${entry.fileName} already exists.`);
         loop();
         return;
       }
 
+      console.log(`DEBUG: making dir.`);
       fs.mkdir(`${dataPath}/${entry.fileName}`, function(err)
       {
         if (err)
         {
+          console.log(`DEBUG: mkdir() error`, err);
           errors.push(err);
           rw.writeToUploadLog(`Error creating the directory ${entry.fileName}.`);
           cb(`Error creating the directory ${entry.fileName}.`);
           return;
         }
 
+        console.log(`DEBUG: dir written.`);
         rw.writeToUploadLog(`Mod directory ${entry.fileName} written.`);
         loop();
       });
@@ -455,11 +508,13 @@ function writeModFiles(zipfile, entries, gameType, cb)
 
     else
     {
+      console.log(`DEBUG: is a file`);
       zipfile.openReadStream(entry, function(err, readStream)
       {
         //if error, add to error messages and continue looping
         if (err)
         {
+          console.log(`DEBUG: openReadStream error`, err);
           errors.push(err);
           rw.writeToUploadLog(`Error opening a readStream at path ${dataPath}/${entry.fileName}.`);
           loop();
@@ -468,6 +523,7 @@ function writeModFiles(zipfile, entries, gameType, cb)
 
         readStream.on("error", function(err)
         {
+          console.log(`DEBUG: error during readstream`, err);
           //if error, add to error messages and continue looping
           errors.push(err);
           rw.writeToUploadLog(`Error occurred during readStream for file ${entry.fileName}:`, err);
@@ -478,11 +534,14 @@ function writeModFiles(zipfile, entries, gameType, cb)
         //finished reading, move on to next entry
         readStream.on("end", function()
         {
+          console.log(`DEBUG: readstream ended`);
           rw.writeToUploadLog(`Mod file ${entry.fileName} written.`);
           loop();
         });
 
+        console.log(`DEBUG: creating writeStream`);
         let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
+        console.log(`DEBUG: writeStream created.`);
 
         //write the stream to the correspondent path
         readStream.pipe(writeStream);
@@ -493,12 +552,13 @@ function writeModFiles(zipfile, entries, gameType, cb)
 
 //We're not using a callback because if the execution fails, we'll just print it
 //to the bot log; the user doesn't need to know about it.
-function deleteTmpFile(fileId)
+function deleteTmpFile(fileId, cb)
 {
   let path = `${tmpPath}/${fileId}`;
 
   if (fs.existsSync(`${path}.zip`) === false && fs.existsSync(path) === false)
   {
+    console.log(`DEBUG: tmp file does not exist anymore.`);
     return;
   }
 
@@ -511,10 +571,14 @@ function deleteTmpFile(fileId)
   {
     if (err)
     {
+      console.log(`DEBUG: unlink err`, err);
       rw.writeToUploadLog(`Failed to delete the temp zipfile ${fileId}:\n`, err);
+      cb(err);
+      return;
     }
 
-    else rw.writeToUploadLog(`Temp zipfile ${fileId} was successfully deleted.`);
+    rw.writeToUploadLog(`Temp zipfile ${fileId} was successfully deleted.`);
+    cb(null);
   });
 }
 
