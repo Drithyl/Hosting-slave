@@ -58,7 +58,6 @@ module.exports.downloadMod = function(fileId, gameType, cb)
   {
     if (err)
     {
-      rw.writeToUploadLog(`Failed to get metadata of ${gameType} mod file id ${fileId}:\n`, err);
       extendedCb(err);
       return;
     }
@@ -92,7 +91,6 @@ module.exports.downloadMod = function(fileId, gameType, cb)
     {
       if (err)
       {
-        rw.writeToUploadLog(`Failed to get the ${gameType} mod zipfile ${fileId}:\n`, err);
         extendedCb(err);
         return;
       }
@@ -173,8 +171,10 @@ module.exports.downloadMap = function(fileId, gameType, cb)
   let extendedCb = function()
   {
     rw.writeToUploadLog(`Deleting temp zipfile ${fileId}...`);
-    deleteTmpFile(fileId);
-    cb.apply(this, arguments);  //apply the arguments that the cb got called with originally
+    deleteTmpFile(fileId, function(err)
+    {
+      cb.apply(this, args);  //apply the arguments that the cb got called with originally
+    });
   };
 
   rw.writeToUploadLog(`Obtaining metadata of ${gameType} map file id ${fileId}...`);
@@ -184,7 +184,6 @@ module.exports.downloadMap = function(fileId, gameType, cb)
   {
     if (err)
     {
-      rw.writeToUploadLog(`Failed to get metadata of ${gameType} map file id ${fileId}:\n`, err);
       extendedCb(err);
       return;
     }
@@ -214,7 +213,6 @@ module.exports.downloadMap = function(fileId, gameType, cb)
     {
       if (err)
       {
-        rw.writeToUploadLog(`Failed to get the ${gameType} map zipfile ${fileId}:\n`, err);
         extendedCb(err);
         return;
       }
@@ -279,7 +277,8 @@ function getMetadata(fileId, cb)
     if (err)
     {
       console.log(`DEBUG: getting Metadata error`, err);
-      cb(err);
+      rw.writeToUploadLog(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
+      cb(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
     }
 
     else cb(null, metadata);
@@ -295,8 +294,8 @@ function getZipfile(fileId, cb)
     if (err)
     {
       console.log(`DEBUG: getting zipfile error`, err);
-      rw.writeToUploadLog(`File id ${fileId} could not be downloaded due to an error:\n`, err);
-      cb(err);
+      rw.writeToUploadLog(`Failed to download file id ${fileId} from google drive. Response status is ${err.status} (${err.statusText}).`);
+      cb(`Failed to download file id ${fileId} from google drive. Response status is ${err.status} (${err.statusText}).`);
       return;
     }
 
