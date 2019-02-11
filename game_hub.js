@@ -113,23 +113,28 @@ module.exports.killGame = function(port, cb)
   });
 };
 
-module.exports.shutDownGames = function()
+module.exports.shutDownGames = function(cb)
 {
-  for (var port in games)
+  Object.keys(games).forEachAsync(function(port, index, next)
   {
-    if (games[port].instance == null)
+    let game = games[port];
+
+    if (game == null || games[port].instance == null)
     {
-      continue;
+      next();
+      return;
     }
 
-    kill(games[port].instance, function(err)
+    kill(game.instance, function(err)
     {
       if (err)
       {
-        rw.logError({game: games[port].name, port: port}, `kill Error:`, err);
+        rw.logError({game: game.name, port: port}, `kill Error:`, err);
       }
+
+      next();
     });
-  }
+  }, cb);
 };
 
 module.exports.gameExists = function(port)

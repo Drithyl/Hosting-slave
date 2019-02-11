@@ -48,6 +48,10 @@ socket.on("disconnect", function(reason)
   //because if it's the master server that crashed, when it comes back up
   //the ports will be reserved for no instance
   hoster.releaseAllPorts();
+  gameHub.shutDownGames(function()
+  {
+
+  });
 
   if (reason === "io server disconnect")
   {
@@ -77,7 +81,6 @@ socket.on("reconnect_attempt", function(attemptNumber)
   if (attemptNumber > 5)
   {
     //rw.writeToGeneralLog("Unable to reconnect after 5 tries; shutting down games for safety.");
-    gameHub.shutDownGames();
   }
 });
 
@@ -201,7 +204,7 @@ socket.on("host", function(data, serverCb)
 
   if (gameHub.isGameRunning(data.port) === true)
   {
-    serverCb(`The game is already up and running.`);
+    serverCb(null, `The game is already up and running.`);
     return;
   }
 
