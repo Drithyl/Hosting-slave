@@ -276,7 +276,6 @@ function getMetadata(fileId, cb)
   {
     if (err)
     {
-      console.log(`DEBUG: getting Metadata error`, err);
       rw.writeToUploadLog(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
       cb(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
     }
