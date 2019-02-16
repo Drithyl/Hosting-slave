@@ -1,4 +1,5 @@
 
+const rw = require("./reader_writer.js");
 
 module.exports.kill = function(spawnedInstance, cb)
 {
@@ -25,7 +26,20 @@ module.exports.kill = function(spawnedInstance, cb)
 
       if (tries > maxTries)
       {
-        cb(`The game instance is still not killed after ${maxTries} attempts.`, null);
+        //if an exitCode exists and it is not 0, it is likely that this instance was bugged,
+        //and was not working properly in the first place
+        if (spawnedInstance.exitCode != null && spawnedInstance.exitCode !== 0)
+        {
+          rw.logError({exitCode: spawnedInstance.exitCode, instance: spawnedInstance}, `The game instance is still not killed after ${maxTries} attempts. It seems that the instance contained an error.`);
+          cb(`The game instance is still not killed after ${maxTries} attempts. It seems that the instance contained an error.`, null);
+        }
+
+        else
+        {
+          rw.logError({instance: spawnedInstance}, `The game instance is still not killed after ${maxTries} attempts.`);
+          cb(`The game instance is still not killed after ${maxTries} attempts.`, null);
+        }
+
         return;
       }
 

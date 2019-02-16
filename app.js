@@ -4,10 +4,10 @@ const fs = require("fs");
 const config = require("./config.json");
 const rw = require("./reader_writer.js");
 const downloader = require("./file_downloader.js");
+const hoster = require("./hoster.js");
 
 //Interfaces for game operating and hosting
-var gameHub = require("./game_hub.js");
-var hoster = require("./hoster.js").init(gameHub);
+var gameInterface = require("./game_interface.js");
 
 /****************************************
 *   SOCKET CONNECTION TO MASTER SERVER  *
@@ -18,6 +18,9 @@ var socket = io.connect(`http://${config.masterIP}:${config.masterPort}/`,
   reconnection: true
 });
 
+//initialize the spawner
+require("./process_spawn").init(socket);
+
 /************************************
 *   MASTER SERVER AUTHENTICATION    *
 ************************************/
@@ -26,7 +29,7 @@ var socket = io.connect(`http://${config.masterIP}:${config.masterPort}/`,
 socket.on("init", function(data, serverCb)
 {
   rw.writeToGeneralLog("Received the init event from master server. Sending authentication attempt.");
-  serverCb({name: config.name, hostedGameNames: gameHub.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip});
+  serverCb({name: config.name, hostedGameNames: gameInterface.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip});
 });
 
 //Received when the master server validates the authentication,
@@ -48,7 +51,7 @@ socket.on("disconnect", function(reason)
   //because if it's the master server that crashed, when it comes back up
   //the ports will be reserved for no instance
   hoster.releaseAllPorts();
-  gameHub.shutDownGames(function()
+  gameInterface.shutDownGames(function()
   {
 
   });
@@ -93,7 +96,7 @@ socket.on("reconnect_error", function(attemptNumber)
 socket.on("reconnect_failed", function()
 {
   //rw.writeToGeneralLog(`Could not reconnect to the master server after all the set reconnectionAttempts. Shutting games down.`);
-  gameHub.shutDownGames();
+  gameInterface.shutDownGames();
 });
 
 /*********************************
@@ -179,80 +182,80 @@ socket.on("downloadMod", function(data, serverCb)
 
 socket.on("create", function(data, serverCb)
 {
-  if (gameHub.isPortInUse(data.port) === true)
+  if (gameInterface.isPortInUse(data.port) === true)
   {
     serverCb("This port is already being used by another game, please restart the hosting.", null);
     return;
   }
 
-  gameHub.create(data.name, data.port, data.gameType, data.args, socket, serverCb);
+  gameInterface.create(data.name, data.port, data.gameType, data.args, socket, serverCb);
 });
 
 socket.on("host", function(data, serverCb)
 {
-  if (gameHub.gameExists(data.port) === false)
+  if (gameInterface.gameExists(data.port) === false)
   {
     serverCb("The slave server has no data for this game.", null);
     return;
   }
 
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  if (gameHub.isGameRunning(data.port) === true)
+  if (gameInterface.isGameRunning(data.port) === true)
   {
     serverCb(null, `The game is already up and running.`);
     return;
   }
 
-  gameHub.requestHosting(data.port, data.args, socket, serverCb);
+  gameInterface.requestHosting(data.port, data.args, socket, serverCb);
 });
 
 socket.on("kill", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.killGame(data.port, serverCb);
+  gameInterface.killGame(data.port, serverCb);
 });
 
 socket.on("deleteGameSavefiles", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.deleteGameSavefiles(data, serverCb);
+  gameInterface.deleteGameSavefiles(data, serverCb);
 });
 
 socket.on("getLastHostedTime", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.getLastHostedTime(data, serverCb);
+  gameInterface.getLastHostedTime(data, serverCb);
 });
 
 socket.on("deleteGameData", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.deleteGameData(data.port, serverCb);
+  gameInterface.deleteGameData(data.port, serverCb);
 });
 
 
@@ -268,7 +271,7 @@ socket.on("getModList", function(data, serverCb)
     serverCb("Game type must be a string.", null);
   }
 
-  else gameHub.getModList(data.gameType, serverCb)
+  else gameInterface.getModList(data.gameType, serverCb)
 });
 
 //Dom 4 & 5
@@ -279,140 +282,140 @@ socket.on("getMapList", function(data, serverCb)
     serverCb("Game type must be a string.", null);
   }
 
-  else gameHub.getMapList(data.gameType, serverCb)
+  else gameInterface.getMapList(data.gameType, serverCb)
 });
 
 //Dom5
 socket.on("getTurnFile", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.getTurnFile(data, serverCb);
+  gameInterface.getTurnFile(data, serverCb);
 });
 
 //Dom5
 socket.on("getScoreDump", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.getScoreDump(data, serverCb);
+  gameInterface.getScoreDump(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("saveSettings", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.saveSettings(data, serverCb);
+  gameInterface.saveSettings(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("start", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.start(data, serverCb);
+  gameInterface.start(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("restart", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.restart(data, serverCb);
+  gameInterface.restart(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("backupSavefiles", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.backupSavefiles(data, serverCb);
+  gameInterface.backupSavefiles(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("rollback", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.rollback(data, serverCb);
+  gameInterface.rollback(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("changeCurrentTimer", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.changeCurrentTimer(data, serverCb);
+  gameInterface.changeCurrentTimer(data, serverCb);
 });
 
 //Dom5, in dom4 the default timer is just the current timer
 //that has to be reset each turn
 socket.on("changeDefaultTimer", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.changeDefaultTimer(data, serverCb);
+  gameInterface.changeDefaultTimer(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("getStales", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.getStales(data, serverCb);
+  gameInterface.getStales(data, serverCb);
 });
 
 //Dom 4 & 5
 socket.on("getTurnInfo", function(data, serverCb)
 {
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.getTurnInfo(data, serverCb);
+  gameInterface.getTurnInfo(data, serverCb);
 });
 
 //Dom 5
@@ -420,13 +423,13 @@ socket.on("getSubmittedPretenders", function(data, serverCb)
 {
   var path = config.dom5DataPath + "savedgames/" + data.name;
 
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.getSubmittedPretenders(data, serverCb);
+  gameInterface.getSubmittedPretenders(data, serverCb);
 });
 
 //Dom 5
@@ -434,13 +437,13 @@ socket.on("removePretender", function(data, serverCb)
 {
   var path = config.dom5DataPath + "savedgames/" + data.name + "/" + data.nationFile;
 
-  if (gameHub.matchName(data.port, data.name) === false)
+  if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
     return;
   }
 
-  gameHub.removePretender(data, function(err)
+  gameInterface.removePretender(data, function(err)
   {
     if (err)
     {
@@ -449,7 +452,7 @@ socket.on("removePretender", function(data, serverCb)
       return;
     }
 
-    gameHub.killGame(data.port, function(err)
+    gameInterface.killGame(data.port, function(err)
     {
       if (err)
       {
@@ -458,7 +461,7 @@ socket.on("removePretender", function(data, serverCb)
         return;
       }
 
-      gameHub.requestHosting(data.port, null, socket, serverCb);
+      gameInterface.requestHosting(data.port, null, socket, serverCb);
     });
   });
 });
@@ -466,5 +469,5 @@ socket.on("removePretender", function(data, serverCb)
 //Dom5
 socket.on("getDump", function(data, serverCb)
 {
-  gameHub.getDump(data, serverCb);
+  gameInterface.getDump(data, serverCb);
 });

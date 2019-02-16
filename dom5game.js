@@ -1,9 +1,9 @@
 
 const fs = require("fs");
-const spawn = require('child_process').spawn;
 const rw = require("./reader_writer.js");
 const provCountFn = require("./province_count_module.js");
 const kill = require("./kill_instance.js").kill;
+const spawn = require("./process_spawn.js").spawn;
 const config = require("./config.json");
 var games;
 
@@ -185,7 +185,7 @@ module.exports.restart = function(data, cb)
           return;
         }
 
-        module.exports.host(game.port, game.args, game, function(err)
+        spawn(game.port, game.args, game, function(err)
         {
           if (err)
           {
@@ -197,33 +197,6 @@ module.exports.restart = function(data, cb)
       });
     });
   });
-};
-
-module.exports.host = function(port, args, game, cb)
-{
-  if (args == null)
-  {
-    args = ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`];
-  }
-
-  else args.push("--statuspage", `${config.statusPageBasePath}/${game.name}_status`);
-
-  if (fs.existsSync(config.dom5ExePath) === false)
-  {
-    cb("The Dominions5.exe path is incorrect. Cannot host game.");
-    return;
-  }
-
-  if (args == null)
-  {
-    cb("No settings were provided to host this game, something went wrong.", null);
-    return;
-  }
-
-  //instances get overloaded if they spent ~24h with their stdio being listened to,
-  //and end up freezing (in windows server 2012)
-	game.instance = spawn(config.dom5ExePath, args, {stdio: 'ignore'});
-  cb(null, game.instance);
 };
 
 //Expects data.timer to be a number expressed in seconds, since that's what
@@ -439,15 +412,9 @@ module.exports.rollback = function(data, cb)
   var source = `${config.pathToGameSaveBackup}/${config.latestTurnBackupDirName}/${game.name}/Turn ${data.turnNbr}`;
   var target = `${config.dom5DataPath}/savedgames/${game.name}`;
 
-  console.log(`Source: ${source}`);
-  console.log(`Target: ${target}`);
-  console.log(`Data:`);
-  console.log(data);
-
   if (fs.existsSync(source) === false)
   {
     source = `${config.pathToGameSaveBackup}/${config.newTurnsBackupDirName}/${game.name}/Turn ${data.turnNbr}`;
-    console.log(`Latest backup does not exist, changing source: ${source}`);
 
     if (fs.existsSync(source) === false)
     {
@@ -468,16 +435,14 @@ module.exports.rollback = function(data, cb)
     {
       if (err)
       {
-        rw.logError({game: game.name, source: source, target: target}, `kill Error:`, err);
         cb(`The files were successfully rollbacked, but the game task could not be killed to reboot it. Try using the kill command.`);
         return;
       }
 
-      module.exports.host(game.port, game.args, game, function(err)
+      spawn(game.port, game.args, game, function(err)
       {
         if (err)
         {
-          rw.logError({game: game.name, source: source, target: target}, `host Error:`, err);
           cb(`The files were successfully rollbacked, but the game task could not be launched after killing it. Try using the launch command.`);
           return;
         }

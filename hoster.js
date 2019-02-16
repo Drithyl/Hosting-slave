@@ -2,19 +2,13 @@
 const fs = require("fs");
 const rw = require("./reader_writer.js");
 const config = require("./config.json");
-var gameHub;
+const gameInterface = require("./game_interface.js");
 var reservedPorts = [];
-
-module.exports.init = function(gameHubModule)
-{
-  gameHub = gameHubModule;
-  return this;
-};
 
 module.exports.reservePort = function(cb)
 {
   var reservedPort = config.gamePortRange.first.toString();
-  var usedPorts = gameHub.getUsedPorts().concat(reservedPorts);
+  var usedPorts = gameInterface.getUsedPorts().concat(reservedPorts);
 
   while (usedPorts.includes(reservedPort.toString()) === true)
   {
@@ -49,7 +43,7 @@ module.exports.checkGameName = function(id, name, gameType, cb)
     return;
   }
 
-  if (gameHub.isGameNameUsed(name, gameType) === true)
+  if (gameInterface.isGameNameUsed(name, gameType) === true)
   {
     rw.writeToGeneralLog(`validateName() Error: This name is already used by a different game. Input was: ${name}`);
     cb(`The game name ${name} is already used by a different game. Please choose one that's free.`);
@@ -126,7 +120,7 @@ module.exports.releaseAllPorts = function()
 function reservePort()
 {
   var reservedPort = config.gamePortRange.first.toString();
-  var usedPorts = gameHub.getUsedPorts().concat(reservedPorts);
+  var usedPorts = gameInterface.getUsedPorts().concat(reservedPorts);
 
   while(usedPorts.includes(reservedPort.toString()) === true)
   {

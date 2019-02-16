@@ -1,6 +1,6 @@
 
 const fs = require("fs");
-const spawn = require('child_process').spawn;
+const spawn = require("./process_spawn.js").spawn;
 const kill = require("./kill_instance.js").kill;
 const rw = require("./reader_writer.js");
 const config = require("./config.json");
@@ -63,7 +63,7 @@ module.exports.start = function(data, cb)
     }
 
     //host
-    module.exports.host(data.port, data.args, games[data.port], function(err)
+    spawn(data.port, data.args, games[data.port], function(err)
     {
       if (err)
       {
@@ -104,7 +104,7 @@ module.exports.restart = function(data, cb)
           return;
         }
 
-        module.exports.host(game.port, game.args, game, function(err)
+        spawn(game.port, game.args, game, function(err)
         {
           if (err)
           {
@@ -118,36 +118,6 @@ module.exports.restart = function(data, cb)
   });
 };
 
-//BEWARE: do not try to pass a master server callback directly to the function or
-//the returning instance will cause a RangeError: Maximum call stack size exceeded
-//as it is an object that contains circular references
-module.exports.host = function(port, args, game, cb)
-{
-  if (args == null)
-  {
-    args = ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`];
-  }
-
-  else args.push("--statuspage", `${config.statusPageBasePath}/${game.name}_status`);
-
-  if (fs.existsSync(config.dom4ExePath) === false)
-  {
-    cb("The Dominions4.exe path is incorrect. Cannot host game.");
-    return;
-  }
-
-  if (args == null)
-  {
-    cb("No settings were provided to host this game, something went wrong.", null);
-    return;
-  }
-
-  //instances get overloaded if they spent ~24h with their stdio being listened to,
-  //and end up freezing (in windows server 2012)
-	game.instance = spawn(config.dom4ExePath, args, {stdio: 'ignore'});
-  cb(null, game.instance);
-};
-
 module.exports.changeCurrentTimer = function(data, cb)
 {
   kill(games[data.port].instance, function(err)
@@ -158,7 +128,7 @@ module.exports.changeCurrentTimer = function(data, cb)
       return;
     }
 
-    module.exports.host(data.port, games[data.port].args.concat(data.timer), games[data.port], function(err)
+    spawn(data.port, games[data.port].args.concat(data.timer), games[data.port], function(err)
     {
       if (err)
       {
@@ -246,7 +216,6 @@ module.exports.deleteGameSavefiles = function(data, cb)
 
 module.exports.backupSavefiles = function(data, cb)
 {
-  console.log(`Backing up save files, data is ${data}`);
   var game = games[data.port];
   var source = `${config.dom4DataPath}/savedgames/${game.name}`;
   var target = `${config.pathToGameSaveBackup}/`;
@@ -256,10 +225,7 @@ module.exports.backupSavefiles = function(data, cb)
     target += `${config.newTurnsBackupDirName}/${game.name}/Turn ${data.turnNbr}`;
   }
 
-  else target += `${config.latestTurnBackupDirName}/${game.name}/Turn ${data.turnNbr}`
-
-  console.log(`Source: ${source}`);
-  console.log(`Target: ${target}`);
+  else target += `${config.latestTurnBackupDirName}/${game.name}/Turn ${data.turnNbr}`;
 
   rw.copyDir(source, target, false, ["", ".2h", ".trn"], cb);
 };
