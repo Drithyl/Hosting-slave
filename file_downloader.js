@@ -65,6 +65,8 @@ module.exports.downloadMod = function(fileId, gameType, cb)
     console.log(`DEBUG: getting success.`);
     rw.writeToUploadLog(`Metadata of ${gameType} mod file id ${fileId} obtained:\n`, metadata);
 
+    if (m)
+
     //The fileExtension property does not include the "." at the beginning of it
     if (metadata.fileExtension !== "zip")
     {
@@ -278,6 +280,12 @@ function getMetadata(fileId, cb)
     {
       rw.writeToUploadLog(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
       cb(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
+    }
+
+    else if (metadata == null)
+    {
+      rw.writeToUploadLog(`Metadata of file id ${fileId} is invalid (${metadata}).`);
+      cb(`Metadata of file id ${fileId} is invalid or this file has no metadata. Perhaps you're not linking a .zip file?`);
     }
 
     else cb(null, metadata);
