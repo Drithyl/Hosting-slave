@@ -225,6 +225,18 @@ socket.on("kill", function(data, serverCb)
   gameInterface.killGame(data.port, serverCb);
 });
 
+socket.on("nuke", function(data, serverCb)
+{
+  console.log("nuke received");
+  if (gameInterface.matchName(data.port, data.name) === false)
+  {
+    serverCb("The game's name and port do not match.", null);
+    return;
+  }
+
+  gameInterface.nukeGame(data.port, serverCb);
+});
+
 socket.on("deleteGameSavefiles", function(data, serverCb)
 {
   if (gameInterface.matchName(data.port, data.name) === false)

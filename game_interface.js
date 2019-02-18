@@ -113,6 +113,24 @@ module.exports.killGame = function(port, cb)
   });
 };
 
+module.exports.nukeGame = function(port, cb)
+{
+  console.log("nuking game");
+  kill(games[port].instance, function(err)
+  {
+    if (err)
+    {
+      console.log("kill error, nuke anyway");
+      games[port].instance = null;
+      cb(null);
+      return;
+    }
+
+    else cb(null);
+    console.log("success");
+  });
+};
+
 module.exports.shutDownGames = function(cb)
 {
   Object.keys(games).forEachAsync(function(port, index, next)

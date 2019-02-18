@@ -11,7 +11,7 @@ module.exports.kill = function(spawnedInstance, cb)
     maxTries = 3;
   }
 
-  if (spawnedInstance != null)
+  if (spawnedInstance != null || spawnedInstance.killed !== true)
   {
     (function killAttempt()
     {
@@ -57,5 +57,5 @@ module.exports.kill = function(spawnedInstance, cb)
     })();
   }
 
-  else cb("The instance is not running", null);
+  else cb(null);
 }
