@@ -557,6 +557,7 @@ function deleteTmpFile(fileId, cb)
   if (fs.existsSync(`${path}.zip`) === false && fs.existsSync(path) === false)
   {
     console.log(`DEBUG: tmp file does not exist anymore.`);
+    cb(null);
     return;
   }
 
