@@ -29,7 +29,7 @@ require("./process_spawn").init(socket);
 socket.on("init", function(data, serverCb)
 {
   rw.writeToGeneralLog("Received the init event from master server. Sending authentication attempt.");
-  serverCb({name: config.name, hostedGameNames: gameInterface.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip});
+  serverCb({name: config.name, hostedGameNames: gameInterface.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip, ownerDiscordID: config.ownerDiscordID});
 });
 
 //Received when the master server validates the authentication,
