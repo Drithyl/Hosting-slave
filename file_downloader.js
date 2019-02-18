@@ -172,6 +172,7 @@ module.exports.downloadMap = function(fileId, gameType, cb)
   //callback chain below
   let extendedCb = function()
   {
+    let args = arguments;
     rw.writeToUploadLog(`Deleting temp zipfile ${fileId}...`);
     deleteTmpFile(fileId, function(err)
     {
