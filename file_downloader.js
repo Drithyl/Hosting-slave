@@ -65,8 +65,6 @@ module.exports.downloadMod = function(fileId, gameType, cb)
     console.log(`DEBUG: getting success.`);
     rw.writeToUploadLog(`Metadata of ${gameType} mod file id ${fileId} obtained:\n`, metadata);
 
-    if (m)
-
     //The fileExtension property does not include the "." at the beginning of it
     if (metadata.fileExtension !== "zip")
     {
@@ -76,7 +74,7 @@ module.exports.downloadMod = function(fileId, gameType, cb)
       return;
     }
 
-    //won't support map zips of over 25MB (metadata size is in bytes)
+    //won't support mod zips of over 25MB (metadata size is in bytes)
     if (metadata.size > modZipMaxSize)
     {
       console.log(`DEBUG: file too big.`);
