@@ -138,7 +138,7 @@ module.exports.downloadMod = function(fileId, gameType, cb)
           if (err)
           {
             rw.writeToUploadLog(`Failed to write mod entries to disk:\n`, err);
-            extendedCb(err);
+            extendedCb(err, failedFileErrors, modDataFilenames);
             return;
           }
 
@@ -422,22 +422,16 @@ function writeModFiles(zipfile, entries, gameType, cb)
   //Don't replace .dm files, as it might cause conflicts. For now, image files
   //will be replaced without question. TODO: find a safer way to handle file
   //overwrites, so that it's not easy to upload improper sprites to hijack a mod
-  entries.forEach(function(entry, index)
+  entries = entries.filter(function(entry, index)
   {
     if (/\.dm$/.test(entry.fileName) === true && fs.existsSync(`${dataPath}/${entry.fileName}`) === true)
     {
       rw.writeToUploadLog(`The .dm file ${entry.fileName} already exists; it will not be replaced.`);
       errors.push(`The .dm file ${entry.fileName} already exists; it will not be replaced, as this could cause issues with ongoing games using it. If you're uploading a new version of the mod, change the name of the .dm file adding the version number so it doesn't conflict.`);
     }
-  });
 
-  //found files that already exist, do not write any file
-  if (errors.length > 0)
-  {
-    rw.writeToUploadLog(`.dm files cannot be overwritten, skipping those.`);
-    cb(`One or more .dm files contained inside the .zip file already existed in the mods folder and will not be overwritten. See the details below:\n\n${errors}`);
-    return;
-  }
+    else return entry;
+  });
 
   entries.forEachAsync(function(entry, index, next)
   {
