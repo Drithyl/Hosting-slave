@@ -7,7 +7,7 @@ const config = require("./config.json");
 const yauzl = require("yauzl");
 
 const googleDriveAPI = require("./google_drive_api/index.js");
-const steamWorkshopAPI = require("./steam_workshop_api/index.js");
+//const steamWorkshopAPI = require("./steam_workshop_api/index.js");
 
 //These are the extensions expected in the collection of map files
 const mapExtensionTest = new RegExp("(\.map)|(\.rgb)|(\.tga)$", "i");
