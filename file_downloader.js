@@ -12,12 +12,13 @@ const googleDriveAPI = require("./google_drive_api/index.js");
 //These are the extensions expected in the collection of map files
 const mapExtensionTest = new RegExp("(\.map)|(\.rgb)|(\.tga)$", "i");
 const mapDataExtensionRegexp = new RegExp("\.map$", "i");
-const mapImageExtensionRegexp = new RegExp("(\.rgb)|(\.tga)$", "i");
+const mapImageExtensionRegexp = new RegExp("(\.rgb)|(\.tga)|(\.png)$", "i");
 
 //These are the extensions expected in the collection of mod files
 const modExtensionTest = new RegExp("(\.dm)|(\.rgb)|(\.tga)$", "i");
 const modDataExtensionRegexp = new RegExp("\.dm$", "i");
-const modSpriteExtensionRegexp = new RegExp("(\.rgb)|(\.tga)$", "i");
+const modSpriteExtensionRegexp = new RegExp("(\.rgb)|(\.tga)|(\.png)$", "i");
+const modSoundExtensionRegexp = new RegExp("\.sw$", "i");
 
 //The temporary path in which zips are piped to, then deleted once extracted
 const tmpPath = `tmp`;
@@ -124,6 +125,12 @@ module.exports.downloadMod = function(fileId, gameType, cb)
           else if (modSpriteExtensionRegexp.test(entry.fileName) === true)
           {
             rw.log("upload", `Keeping sprite file ${entry.fileName}.`);
+            modEntries.push(entry);
+          }
+
+          else if (modSoundExtensionRegexp.test(entry.fileName) === true)
+          {
+            rw.log("upload", `Keeping sound file ${entry.fileName}.`);
             modEntries.push(entry);
           }
 
