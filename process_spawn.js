@@ -52,7 +52,8 @@ module.exports.spawn = function(port, args, game, cb)
 
   //instances get overloaded if they spent ~24h with their stdio being listened to,
   //and end up freezing (in windows server 2012), according to tests in previous bot versions
-	game.instance = spawn(path, args, {stdio: 'ignore'});
+  //TODO: testing not ignoring the stdio again
+	game.instance = spawn(path, args, /*{stdio: 'ignore'}*/);
   rw.log("general", `Process for ${game.name} spawned.`);
 
   //The process could not be spawned, or
@@ -71,7 +72,7 @@ module.exports.spawn = function(port, args, game, cb)
     //unexpected termination of the game. If the property killed was not
     //set to true, it would mean that the kill was not intended?
     //A code that is not 0 means there was an error
-    if (game.instance.killed === false)
+    if (game.instance.killed === false /*&& code !== 0*/)
     {
       rw.logError({port: port, args: args, game: game.name, code: code, signal: signal}, `instance.on "close" event.`);
       socket.emit("gameClosedUnexpectedly", {name: game.name});
@@ -101,11 +102,11 @@ function getAdditionalArgs(game)
   switch(game.gameType.toLowerCase().trim())
   {
     case "dom4":
-    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
+    return ["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
     break;
 
     case "dom5":
-    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
+    return ["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
     break;
 
     case "coe4":
@@ -146,11 +147,8 @@ function backupCmd(type, gameName)
 
   if (typeof backupModulePath !== "string")
   {
-    console.log("empty path");
     return [];
   }
 
   else return [type, `node "${backupModulePath}" ${gameName} ${type}`];
-
-  /*else return [type, `H:/Google Drive/Clockwork Hounds stuff/GitHub/Hosting-slave - indev ${backupModulePath} ${gameName} ${type}`];*/
 }
