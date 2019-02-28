@@ -9,19 +9,19 @@ module.exports = function(mapData)
 
   if (mapData == null)
   {
-    rw.writeToGeneralLog("The mapData provided was null.");
+    rw.log("general", "The mapData provided was null.");
     return null;
   }
 
   if (/\w+/.test(mapData) == false)
   {
-    rw.writeToGeneralLog("The mapData provided contains no word characters.");
+    rw.log("general", "The mapData provided contains no word characters.");
     return null;
   }
 
   if (/\#terrain\s+\d+\s+\d+/ig.test(mapData) === false)
   {
-    rw.writeToGeneralLog("The mapData provided doesn't contain any #terrain expression.");
+    rw.log("general", "The mapData provided doesn't contain any #terrain expression.");
     return null;
   }
 

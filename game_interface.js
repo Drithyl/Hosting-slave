@@ -13,7 +13,7 @@ const spawn = require("./process_spawn.js").spawn;
 //Create the file if it doesn't exist
 if (fs.existsSync(config.gameDataSavePath) === false)
 {
-  rw.writeToGeneralLog(`Game Data file not found; creating a new one: ${config.gameDataSavePath}`);
+  rw.log("general", `Game Data file not found; creating a new one: ${config.gameDataSavePath}`);
   fs.writeFileSync(config.gameDataSavePath, "{}");
 }
 
@@ -115,19 +115,16 @@ module.exports.killGame = function(port, cb)
 
 module.exports.nukeGame = function(port, cb)
 {
-  console.log("nuking game");
   kill(games[port].instance, function(err)
   {
     if (err)
     {
-      console.log("kill error, nuke anyway");
       games[port].instance = null;
       cb(null);
       return;
     }
 
     else cb(null);
-    console.log("success");
   });
 };
 
@@ -411,7 +408,7 @@ function saveGames(cb)
 {
   var data = gamesToJSON();
 
-  rw.writeToGeneralLog("Saving games' data:");
+  rw.log("general", "Saving games' data:");
   fs.writeFile(config.gameDataSavePath, data, function(err)
   {
     if (err)
@@ -422,7 +419,7 @@ function saveGames(cb)
     }
 
     cb(null);
-    rw.writeToGeneralLog("Data saved.");
+    rw.log("general", "Data saved.");
   });
 };
 

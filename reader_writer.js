@@ -1,5 +1,14 @@
+
 const fs = require("fs");
 const config = require("./config.json");
+const logTagsToPaths =
+{
+	"default": config.generalLogPath,
+	"general": config.generalLogPath,
+	"error": config.errorLogPath,
+	"backup": config.backupLogPath,
+	"upload": config.uploadLogPath
+}
 
 module.exports.copyFile = function(source, target, cb)
 {
@@ -267,19 +276,14 @@ module.exports.readDirContent = function(path, extensionFilter, cb)
 	});
 };
 
-module.exports.writeToGeneralLog = function(...inputs)
-{
-	module.exports.log(config.generalLogPath, ...inputs);
-};
-
-module.exports.writeToUploadLog = function(...inputs)
-{
-	module.exports.log(config.uploadLogPath, ...inputs);
-};
-
-module.exports.log = function(path, ...inputs)
+module.exports.log = function(tags, ...inputs)
 {
 	var msg = module.exports.timestamp() + "\n";
+
+	if (Array.isArray(tags) === false)
+	{
+		tags = [tags];
+	}
 
 	inputs.forEach(function(input)
 	{
@@ -300,13 +304,29 @@ module.exports.log = function(path, ...inputs)
 
 	console.log(`${msg}\n`);
 
-	fs.appendFile(path, `${msg}\r\n\n`, function (err)
+	tags.forEachAsync(function(tag, index, next)
 	{
-		if (err)
+		if (logTagsToPaths[tag] == null)
 		{
-			console.log(err);
+			next();
 			return;
 		}
+
+		if (tag === "error")
+		{
+			console.trace();
+			console.log("\n");
+		}
+
+		fs.appendFile(logTagsToPaths[tag], `${msg}\r\n\n`, function (err)
+		{
+			if (err)
+			{
+				console.log(err);
+			}
+
+			next();
+		});
 	});
 };
 
@@ -354,38 +374,6 @@ module.exports.logError = function(values, ...inputs)
 			next();
 		});
 
-	});
-};
-
-module.exports.traceError = function(...inputs)
-{
-	var msg = module.exports.timestamp() + "\n";
-
-	inputs.forEach(function(input)
-	{
-		if (typeof input === "string")
-		{
-			//add tab characters to each line so that they are all indented relative to the timestamp
-			input.split("\n").forEach(function(line)
-			{
-				msg += `\t${line}\n`;
-			});
-		}
-
-		else msg += `\t${JSONStringify(input)}\n`;
-	});
-
-	console.log(`${msg}\n`);
-	console.trace();
-	console.log("\n");
-
-	fs.appendFile(config.errorLogPath, `${msg}\r\n\n`, function (err)
-	{
-		if (err)
-		{
-			console.log(err);
-			return;
-		}
 	});
 };
 

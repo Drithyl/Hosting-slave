@@ -53,7 +53,7 @@ module.exports.spawn = function(port, args, game, cb)
   //instances get overloaded if they spent ~24h with their stdio being listened to,
   //and end up freezing (in windows server 2012), according to tests in previous bot versions
 	game.instance = spawn(path, args, {stdio: 'ignore'});
-  rw.writeToGeneralLog(`Process for ${game.name} spawned.`);
+  rw.log("general", `Process for ${game.name} spawned.`);
 
   //The process could not be spawned, or
   //the process could not be killed
@@ -101,11 +101,11 @@ function getAdditionalArgs(game)
   switch(game.gameType.toLowerCase().trim())
   {
     case "dom4":
-    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`];
+    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
     break;
 
     case "dom5":
-    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`]
+    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
     break;
 
     case "coe4":
@@ -138,4 +138,19 @@ function getExePath(gameType)
     rw.logError({name: game.name, gameType: game.gameType}, `The game ${game.name} has an incorrect game type, cannot get exe path: ${game.gameType}.`);
     throw `The game ${game.name} has an incorrect game type, cannot get exe path: ${game.gameType}.`;
   }
+}
+
+function backupCmd(type, gameName)
+{
+  let backupModulePath = require.resolve("./backup_script.js");
+
+  if (typeof backupModulePath !== "string")
+  {
+    console.log("empty path");
+    return [];
+  }
+
+  else return [type, `node "${backupModulePath}" ${gameName} ${type}`];
+
+  /*else return [type, `H:/Google Drive/Clockwork Hounds stuff/GitHub/Hosting-slave - indev ${backupModulePath} ${gameName} ${type}`];*/
 }

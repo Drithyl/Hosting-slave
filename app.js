@@ -28,7 +28,7 @@ require("./process_spawn").init(socket);
 //to verify that this server is trusted by using the token.
 socket.on("init", function(data, serverCb)
 {
-  rw.writeToGeneralLog("Received the init event from master server. Sending authentication attempt.");
+  rw.log("general", "Received the init event from master server. Sending authentication attempt.");
   serverCb({name: config.name, hostedGameNames: gameInterface.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip, ownerDiscordID: config.ownerDiscordID});
 });
 
@@ -36,7 +36,7 @@ socket.on("init", function(data, serverCb)
 //at which point we can launch games.
 socket.on("validated", function(data, serverCb)
 {
-  rw.writeToGeneralLog("Authentication attempt validated by master server.");
+  rw.log("general", "Authentication attempt validated by master server.");
 });
 
 
@@ -45,7 +45,7 @@ socket.on("validated", function(data, serverCb)
 ******************************/
 socket.on("disconnect", function(reason)
 {
-  rw.writeToGeneralLog(`Socket disconnected. Reason: ${reason}.`);
+  rw.log("general", `Socket disconnected. Reason: ${reason}.`);
 
   //release all reserved ports in assisted hosting instances,
   //because if it's the master server that crashed, when it comes back up
@@ -74,28 +74,28 @@ socket.on("reconnect", function(attemptNumber)
 {
   //no need to relaunch games here as the authentication process will kick in again
   //from the very beginning, on connection, when the master server sends the "init" event
-  rw.writeToGeneralLog(`Reconnected successfully on attempt ${attemptNumber}.`);
+  rw.log("general", `Reconnected successfully on attempt ${attemptNumber}.`);
 });
 
 socket.on("reconnect_attempt", function(attemptNumber)
 {
-  //rw.writeToGeneralLog(`Attempting to reconnect...`);
+  //rw.log("general", `Attempting to reconnect...`);
 
   if (attemptNumber > 5)
   {
-    //rw.writeToGeneralLog("Unable to reconnect after 5 tries; shutting down games for safety.");
+    //rw.log("general", "Unable to reconnect after 5 tries; shutting down games for safety.");
   }
 });
 
 socket.on("reconnect_error", function(attemptNumber)
 {
-  //rw.writeToGeneralLog(`Reconnect attempt failed.`);
+  //rw.log("general", `Reconnect attempt failed.`);
 });
 
 //fired when it can't reconnect within reconnectionAttempts
 socket.on("reconnect_failed", function()
 {
-  //rw.writeToGeneralLog(`Could not reconnect to the master server after all the set reconnectionAttempts. Shutting games down.`);
+  //rw.log("general", `Could not reconnect to the master server after all the set reconnectionAttempts. Shutting games down.`);
   gameInterface.shutDownGames();
 });
 
@@ -104,31 +104,31 @@ socket.on("reconnect_failed", function()
 *********************************/
 socket.on("reservePort", function(data, serverCb)
 {
-  rw.writeToGeneralLog(`Request to reserve port received from user id <${data.id}>.`);
+  rw.log("general", `Request to reserve port received from user id <${data.id}>.`);
   hoster.reservePort(serverCb);
 });
 
 socket.on("releasePort", function(data)
 {
-  rw.writeToGeneralLog(`Request to release port received.`);
+  rw.log("general", `Request to release port received.`);
   hoster.releasePort(data.port);
 });
 
 socket.on("checkGameName", function(data, serverCb)
 {
-  rw.writeToGeneralLog(`Request to check game name <${data.name}> from user id <${data.id}> received.`);
+  rw.log("general", `Request to check game name <${data.name}> from user id <${data.id}> received.`);
   hoster.checkGameName(data.id, data.name, data.gameType, serverCb);
 });
 
 socket.on("validateMap", function(data, serverCb)
 {
-  rw.writeToGeneralLog(`Request to validate mapfile <${data.mapfile}> received.`);
+  rw.log("general", `Request to validate mapfile <${data.mapfile}> received.`);
   hoster.validateMapfile(data.mapfile, data.gameType, serverCb);
 });
 
 socket.on("validateMod", function(data, serverCb)
 {
-  rw.writeToGeneralLog(`Request to validate mod <${data.mod}> received.`);
+  rw.log("general", `Request to validate mod <${data.mod}> received.`);
   hoster.validateMod(data.mod, data.gameType, serverCb);
 });
 
@@ -152,7 +152,7 @@ socket.on("downloadMap", function(data, serverCb)
     return;
   }
 
-  rw.writeToUploadLog(`Request to download map zipfile ${data.fileId} received.`);
+  rw.log("upload", `Request to download map zipfile ${data.fileId} received.`);
   downloader.downloadMap(data.fileId, data.gameType, serverCb);
 });
 
@@ -170,7 +170,7 @@ socket.on("downloadMod", function(data, serverCb)
     return;
   }
 
-  rw.writeToUploadLog(`Request to download mod zipfile ${data.fileId} received.`);
+  rw.log("upload", `Request to download mod zipfile ${data.fileId} received.`);
   downloader.downloadMod(data.fileId, data.gameType, serverCb);
 });
 
@@ -227,7 +227,6 @@ socket.on("kill", function(data, serverCb)
 
 socket.on("nuke", function(data, serverCb)
 {
-  console.log("nuke received");
   if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);

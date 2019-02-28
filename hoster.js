@@ -45,7 +45,7 @@ module.exports.checkGameName = function(id, name, gameType, cb)
 
   if (gameInterface.isGameNameUsed(name, gameType) === true)
   {
-    rw.writeToGeneralLog(`validateName() Error: This name is already used by a different game. Input was: ${name}`);
+    rw.log("general", `validateName() Error: This name is already used by a different game. Input was: ${name}`);
     cb(`The game name ${name} is already used by a different game. Please choose one that's free.`);
   }
 
@@ -139,25 +139,25 @@ function validateNameFormat(name)
 {
 	if (name == null)
 	{
-    rw.writeToGeneralLog(`validateName() Error: Game name is null. Input was: ${name}`);
+    rw.log("general", `validateName() Error: Game name is null. Input was: ${name}`);
     throw "Game name MUST be specified.";
   }
 
 	if (name.length > 24)
 	{
-    rw.writeToGeneralLog(`validateName() Error: Game name ${name} is too long. Input was: ${name}`);
+    rw.log("general", `validateName() Error: Game name ${name} is too long. Input was: ${name}`);
     throw `Game name ${name} is too long. It must be within 24 characters.`;
   }
 
 	if (/[^0-9a-zA-Z_~]/.test(name) === true)
 	{
-    rw.writeToGeneralLog(`validateName() Error: Invalid characters. Input was: ${name}`);
+    rw.log("general", `validateName() Error: Invalid characters. Input was: ${name}`);
     throw `The game name ${name} contains invalid characters. Only letters, numbers and underscores are allowed.`;
   }
 
   if (name === "dom4" || name === "dom5" || name === "coe4")
   {
-    rw.writeToGeneralLog(`validateName() Error: Reserved keyword. Input was: ${name}`);
+    rw.log("general", `validateName() Error: Reserved keyword. Input was: ${name}`);
     throw "This is a reserved keyword, please choose a different one.";
   }
 }

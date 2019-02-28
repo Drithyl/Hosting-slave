@@ -503,7 +503,7 @@ function parseDump(name)
 
 	if (fs.existsSync(path) === false)
 	{
-    rw.writeToGeneralLog(`Could not find the path of the dump data of ${name}`);
+    rw.log("general", `Could not find the path of the dump data of ${name}`);
     return null;
 	}
 
