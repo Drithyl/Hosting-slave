@@ -66,19 +66,40 @@ module.exports.spawn = function(port, args, game, cb)
     socket.emit("gameError", {name: game.name, error: err});
   });
 
-  //Event fires if the process is closed
-  game.instance.on("close", (code, signal) =>
+  //Fires when the process itself exits. See https://nodejs.org/api/child_process.html#child_process_event_exit
+  game.instance.on("exit", (code, signal) =>
   {
-    //unexpected termination of the game. If the property killed was not
-    //set to true, it would mean that the kill was not intended?
-    //A code that is not 0 means there was an error
-    if (game.instance.killed === false /*&& code !== 0*/)
+    //If process exited, code is its final code and signal is null;
+    //if it was terminated due to a signal, then code is null.
+    if (signal == null)
     {
-      rw.logError({port: port, args: args, game: game.name, code: code, signal: signal}, `instance.on "close" event.`);
-      socket.emit("gameClosedUnexpectedly", {name: game.name});
+      rw.log(["error"], `instance.on "exit" event; process exited. Maybe an ingame error occurred, or an arg made it crash. Try launching it without the --notext flag:\n`, {port: port, args: args, game: game.name, code: code, signal: signal});
+      socket.emit("gameExited", {name: game.name, code: code});
+    }
+
+    //SIGKILL would mean that the kill_instance.js code was called, so it's as expected
+    else if (game.instance.killed === false && signal !== "SIGKILL")
+    {
+      rw.log(["error"], `instance.on "exit" event; process was abnormally terminated:\n`, {port: port, args: args, game: game.name, code: code, signal: signal});
+      socket.emit("gameTerminated", {name: game.name, signal: signal});
     }
 
     game.instance = null;
+  });
+
+  //Event fires if the stdio streams are closed (which might be *before* or *after* the actual
+  //process exits. See https://nodejs.org/api/child_process.html#child_process_event_close and
+  //https://stackoverflow.com/questions/37522010/difference-between-childprocess-close-exit-events)
+  game.instance.on("close", (code, signal) =>
+  {
+    rw.log(["general"], `${game.name}'s stdio closed:\n`, {port: port, args: args, game: game.name, code: code, signal: signal});
+
+    //code 0 means there were no errors. If instance is null, then "exit" above
+    //must have run already, so don't ping the master server again
+    if (game.instance != null && game.instance.killed === false && code !== 0)
+    {
+      socket.emit("stdioClosed", {name: game.name, code: code, signal: signal});
+    }
   });
 
   //will be null if anything was changed on calling the spawn function,
@@ -88,11 +109,19 @@ module.exports.spawn = function(port, args, game, cb)
     //errors from the instance's stderr stream
     game.instance.stderr.on("data", (data) =>
     {
-      game.instance = null;
-      socket.emit("gameError", {name: game.name, error: data.toString()});
+      rw.log(["error"], `${game.name}'s stderr "data":\n`, {port: port, args: args, game: game.name, data: data});
+      socket.emit("stderrData", {name: game.name, error: data.toString()});
     });
   }
 
+  if (game.instance.stdin != null)
+  {
+    game.instance.stdin.on('error', function (err)
+    {
+      rw.log(["error"], `${game.name}'s stdin "error":\n`, {port: port, args: args, game: game.name, data: data});
+      socket.emit("stdinError", {name: game.name, error: err});
+    });
+  }
 
   cb(null);
 };
@@ -102,7 +131,7 @@ function getAdditionalArgs(game)
   switch(game.gameType.toLowerCase().trim())
   {
     case "dom4":
-    return ["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
+    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
     break;
 
     case "dom5":
