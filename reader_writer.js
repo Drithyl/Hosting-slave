@@ -276,13 +276,24 @@ module.exports.readDirContent = function(path, extensionFilter, cb)
 	});
 };
 
-module.exports.log = function(tags, ...inputs)
+module.exports.log = function(tags, trace, ...inputs)
 {
 	var msg = module.exports.timestamp() + "\n";
 
 	if (Array.isArray(tags) === false)
 	{
 		tags = [tags];
+	}
+
+	//no trace argument was provided
+	if (typeof trace !== "boolean")
+	{
+		if (Array.isArray(trace) === false)
+		{
+			trace = [trace];
+		}
+
+		inputs = trace.concat(inputs);
 	}
 
 	inputs.forEach(function(input)
@@ -304,18 +315,19 @@ module.exports.log = function(tags, ...inputs)
 
 	console.log(`${msg}\n`);
 
+	if (trace === true)
+	{
+		console.log("\n\n");
+		console.trace();
+		console.log("\n\n");
+	}
+
 	tags.forEachAsync(function(tag, index, next)
 	{
 		if (logTagsToPaths[tag] == null)
 		{
 			next();
 			return;
-		}
-
-		if (tag === "error")
-		{
-			console.trace();
-			console.log("\n");
 		}
 
 		fs.appendFile(logTagsToPaths[tag], `${msg}\r\n\n`, function (err)

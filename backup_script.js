@@ -15,7 +15,7 @@ rw.log(["backup"], `Backup type ${type} for ${gameName} starting.`);
 
 if (gameName == null)
 {
-  rw.log(["error", "backup"], `No game name argument received.`);
+  rw.log(["error", "backup"], true, `No game name argument received.`);
 }
 
 if (preexecRegex.test(type) === true)
@@ -30,7 +30,7 @@ else if (postexecRegex.test(type) === true)
 
 else
 {
-  rw.log(["error", "backup"], `Backup type received is invalid; expected --preexec or --postexec: ${type}`);
+  rw.log(["error", "backup"], true, `Backup type received is invalid; expected --preexec or --postexec: ${type}`);
   return;
 }
 
@@ -38,7 +38,7 @@ fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, con
 {
   if (err)
   {
-    rw.log(["error", "backup"], `Error occurred while reading file ${config.statusPageBasePath}/${gameName}_status:`, err);
+    rw.log(["error", "backup"], true, `Error occurred while reading file ${config.statusPageBasePath}/${gameName}_status:`, err);
     return;
   }
 
@@ -46,7 +46,7 @@ fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, con
 
   if (content[0] == null)
   {
-    rw.log(["error", "backup"], `Content matched is incorrect: ${content}`);
+    rw.log(["error", "backup"], true, `Content matched is incorrect: ${content}`);
     return;
   }
 
@@ -54,7 +54,7 @@ fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, con
 
   if (isNaN(+turn) === true)
   {
-    rw.log(["error", "backup"], `Turn parsed is incorrect: ${turn}`);
+    rw.log(["error", "backup"], true, `Turn parsed is incorrect: ${turn}`);
     return;
   }
 
@@ -69,7 +69,7 @@ fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, con
   {
     if (err)
     {
-      rw.log(["error", "backup"], `Error occurred while copying dir ${source} to ${target}.`);
+      rw.log(["error", "backup"], true, `Error occurred while copying dir ${source} to ${target}.`);
     }
 
     rw.log("backup", `${gameName}'s ${type} Turn ${turn} backed up successfully.`);
