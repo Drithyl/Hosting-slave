@@ -102,15 +102,24 @@ module.exports.spawn = function(port, args, game, cb)
     }
   });
 
-  //will be null if anything was changed on calling the spawn function,
+  //will be null if stdio was changed on calling the spawn function,
   //like {stdio: 'ignore'}
   if (game.instance.stderr != null)
   {
-    //errors from the instance's stderr stream
+    game.instance.stderr.setEncoding("utf8");
+
+    //data from the instance's stderr stream
     game.instance.stderr.on("data", (data) =>
     {
-      rw.log(["error"], `${game.name}'s stderr "data":\n`, {port: port, args: args, game: game.name, data: data});
-      socket.emit("stderrData", {name: game.name, error: data.toString()});
+      rw.log(["general"], `${game.name}'s stderr "data" event triggered:\n`, {game: game.name, data: data});
+      socket.emit("stderrData", {name: game.name, data: data});
+    });
+
+    //errors from the instance's stderr stream
+    game.instance.stderr.on("error", (err) =>
+    {
+      rw.log(["error"], `${game.name}'s stderr "error" event triggered:\n`, {port: port, args: args, game: game.name, error: err});
+      socket.emit("stderrError", {name: game.name, error: err});
     });
   }
 
@@ -118,8 +127,24 @@ module.exports.spawn = function(port, args, game, cb)
   {
     game.instance.stdin.on('error', function (err)
     {
-      rw.log(["error"], `${game.name}'s stdin "error":\n`, {port: port, args: args, game: game.name, data: data});
+      rw.log(["error"], `${game.name}'s stdin "error" event triggered:\n`, {port: port, args: args, game: game.name, error: err});
       socket.emit("stdinError", {name: game.name, error: err});
+    });
+  }
+
+  if (game.instance.stdout != null)
+  {
+    game.instance.stdout.setEncoding("utf8");
+    game.instance.stdout.on('data', function (data)
+    {
+      rw.log(["general"], `${game.name}'s stdout "data" event triggered:\n`, {game: game.name, data: data});
+      socket.emit("stdoutData", {name: game.name, data: data});
+    });
+
+    game.instance.stdout.on('error', function (err)
+    {
+      rw.log(["error"], `${game.name}'s stdout "error" event triggered:\n`, {port: port, args: args, game: game.name, error: err});
+      socket.emit("stdoutError", {name: game.name, error: err});
     });
   }
 
