@@ -135,11 +135,11 @@ module.exports.spawn = function(port, args, game, cb)
   if (game.instance.stdout != null)
   {
     game.instance.stdout.setEncoding("utf8");
-    game.instance.stdout.on('data', function (data)
+    /*game.instance.stdout.on('data', function (data)
     {
       rw.log(["general"], `${game.name}'s stdout "data" event triggered:\n`, {game: game.name, data: data});
       socket.emit("stdoutData", {name: game.name, data: data});
-    });
+    });*/
 
     game.instance.stdout.on('error', function (err)
     {
