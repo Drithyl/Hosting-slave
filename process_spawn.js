@@ -48,6 +48,7 @@ module.exports.spawn = function(port, args, game, cb)
   catch(err)
   {
     cb(err);
+    return;
   }
 
   //instances get overloaded if they spent ~24h with their stdio being listened to,
