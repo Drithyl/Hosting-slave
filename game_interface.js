@@ -130,7 +130,6 @@ module.exports.nukeGame = function(port, cb)
 
 module.exports.shutDownGames = function(cb)
 {
-  rw.log(`general`, "Shutting down games...");
   Object.keys(games).forEachAsync(function(port, index, next)
   {
     let game = games[port];

@@ -51,9 +51,11 @@ socket.on("disconnect", function(reason)
   //because if it's the master server that crashed, when it comes back up
   //the ports will be reserved for no instance
   hoster.releaseAllPorts();
+
+  rw.log(`general`, "Shutting down games...");
   gameInterface.shutDownGames(function()
   {
-
+    rw.log(`general`, "Finished shutting down games.");
   });
 
   if (reason === "io server disconnect")

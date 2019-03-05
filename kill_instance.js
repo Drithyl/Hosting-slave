@@ -13,6 +13,7 @@ module.exports.kill = function(game, cb)
 
   if (game.instance == null || game.instance.killed === true)
   {
+    rw.log(`general`, `${game.name}'s instance is already null or killed.`);
     game.instance = null;
     cb(null);
     return;
@@ -26,6 +27,7 @@ module.exports.kill = function(game, cb)
     {
       //success
       game.instance = null;
+      rw.log(`general`, `${game.name}'s instance was killed.`);
       cb(null);
       return;
     }

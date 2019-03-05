@@ -115,6 +115,7 @@ module.exports.validateMod = function(mod, gameType, cb)
 module.exports.releaseAllPorts = function()
 {
   reservedPorts = [];
+  rw.log("general", `Released reserved assistted hosting instance ports.`);
 };
 
 function reservePort()
