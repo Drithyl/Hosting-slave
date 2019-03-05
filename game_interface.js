@@ -101,7 +101,7 @@ module.exports.isGameNameUsed = function(name, gameType)
 
 module.exports.killGame = function(port, cb)
 {
-  kill(games[port].instance, function(err)
+  kill(games[port], function(err)
   {
     if (err)
     {
@@ -115,7 +115,7 @@ module.exports.killGame = function(port, cb)
 
 module.exports.nukeGame = function(port, cb)
 {
-  kill(games[port].instance, function(err)
+  kill(games[port], function(err)
   {
     if (err)
     {
@@ -130,20 +130,34 @@ module.exports.nukeGame = function(port, cb)
 
 module.exports.shutDownGames = function(cb)
 {
+  rw.log(`general`, "Shutting down games...");
   Object.keys(games).forEachAsync(function(port, index, next)
   {
     let game = games[port];
 
-    if (game == null || games[port].instance == null)
+    if (game == null)
     {
+      rw.log("general", `Port key ${port} contains a null game.`);
+      delete games[port];
       next();
-      return;
     }
 
-    kill(game.instance, function(err)
+    if (game.instance == null)
     {
+      rw.log("general", `${game.name}'s instance is already null.`);
       next();
-    });
+    }
+
+    else
+    {
+      rw.log("general", `Killing ${game.name}...`);
+
+      kill(game, function(err)
+      {
+        next();
+      });
+    }
+
   }, cb);
 };
 
@@ -369,7 +383,7 @@ module.exports.getLastHostedTime = function(data, cb)
 
 module.exports.deleteGameSavefiles = function(data, cb)
 {
-  kill(games[port].instance, function(err)
+  kill(games[port], function(err)
   {
     if (err)
     {
@@ -383,7 +397,7 @@ module.exports.deleteGameSavefiles = function(data, cb)
 
 module.exports.deleteGameData = function(port, cb)
 {
-  kill(games[port].instance, function(err)
+  kill(games[port], function(err)
   {
     if (err)
     {

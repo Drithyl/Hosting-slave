@@ -54,7 +54,7 @@ module.exports.getMapList = function(cb)
 
 module.exports.start = function(data, cb)
 {
-  kill(games[data.port].instance, function(err)
+  kill(games[data.port], function(err)
   {
     if (err)
     {
@@ -88,7 +88,7 @@ module.exports.restart = function(data, cb)
       return;
     }
 
-    kill(game.instance, function(err)
+    kill(game, function(err)
     {
       if (err)
       {
@@ -120,7 +120,7 @@ module.exports.restart = function(data, cb)
 
 module.exports.changeCurrentTimer = function(data, cb)
 {
-  kill(games[data.port].instance, function(err)
+  kill(games[data.port], function(err)
   {
     if (err)
     {

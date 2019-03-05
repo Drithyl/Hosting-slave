@@ -169,7 +169,7 @@ module.exports.restart = function(data, cb)
       return;
     }
 
-    kill(game.instance, function(err)
+    kill(game, function(err)
     {
       if (err)
       {
@@ -431,7 +431,7 @@ module.exports.rollback = function(data, cb)
       return;
     }
 
-    kill(game.instance, function(err)
+    kill(game, function(err)
     {
       if (err)
       {
