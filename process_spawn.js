@@ -72,9 +72,9 @@ module.exports.spawn = function(port, args, game, cb)
   {
     //If process exited, code is its final code and signal is null;
     //if it was terminated due to a signal, then code is null.
-    if (signal === "SIGKILL")
+    if (signal === "SIGKILL" || signal === "SIGTERM" || signal === "SIGINT")
     {
-      rw.log(["general"], `${game.name}'s was terminated by SIGKILL.`);
+      rw.log(["general"], `${game.name}'s was terminated by ${signal}.`);
     }
 
     else if (code === 0)
@@ -103,9 +103,9 @@ module.exports.spawn = function(port, args, game, cb)
   //https://stackoverflow.com/questions/37522010/difference-between-childprocess-close-exit-events)
   game.instance.on("close", (code, signal) =>
   {
-    if (signal === "SIGKILL")
+    if (signal === "SIGKILL" || signal === "SIGTERM" || signal === "SIGINT")
     {
-      rw.log(["general"], `${game.name}'s stdio got closed by SIGKILL.`);
+      rw.log(["general"], `${game.name}'s stdio got closed by ${signal}.`);
     }
 
     else if (code === 0)
