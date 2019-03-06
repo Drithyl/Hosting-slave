@@ -96,13 +96,15 @@ module.exports.restart = function(data, cb)
         return;
       }
 
-      fs.unlink(`${config.statusPageBasePath}/${game.name}_status`, function(err)
+      //ignore this because the statuspage file deletion is not critical;
+      //even if it remains it will be overwritten
+      /*fs.unlink(`${config.statusPageBasePath}/${game.name}_status`, function(err)
       {
         if (err)
         {
           cb(`The data was restarted, but the old statuspage file could not be deleted. Try to reboot the game by using the kill and launch commands to do so manually.`);
           return;
-        }
+        }*/
 
         spawn(game.port, game.args, game, function(err)
         {
@@ -113,7 +115,7 @@ module.exports.restart = function(data, cb)
 
           else cb(null);
         });
-      });
+      //});
     });
   });
 };
