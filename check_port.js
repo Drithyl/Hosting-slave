@@ -11,6 +11,9 @@ const net = require('net');
 
 module.exports = function(port, cb)
 {
+  var cbWasCalled = false;
+  var timeoutMs = 30000;
+
   var server = net.createServer(function(socket)
   {
     socket.write("Echo server\r\n");
@@ -23,15 +26,38 @@ module.exports = function(port, cb)
   {
     if (err.code === "EADDRINUSE")
     {
-      cb(true);
+      if (cbWasCalled === false)
+      {
+        cb(true);
+        cbWasCalled = true;
+      }
     }
 
-    else cb(false);
+    else if (cbWasCalled === false)
+    {
+      cb(false);
+      cbWasCalled = true;
+    }
   });
 
   server.on("listening", function(err)
   {
     server.close();
-    cb(false);
+
+    if (cbWasCalled === false)
+    {
+      cb(false);
+      cbWasCalled = true;
+    }
+  });
+
+  setTimeout(function()
+  {
+    if (cbWasCalled === false)
+    {
+      rw.log("error", `Server listening on port ${port} did not get an answer after ${timeoutMs}ms.`);
+      cb(false);
+      cbWasCalled = true;
+    }
   });
 };
