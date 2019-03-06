@@ -63,7 +63,7 @@ module.exports.spawn = function(port, args, game, cb)
   game.instance.on("error", (err) =>
   {
     game.instance = null;
-    rw.logError({port: port, args: args, game: game.name, error: err}, `host error in the instance.on "error" event.`);
+    rw.log("error", `${game.name}'s "error" event triggered.`, {port: port, args: args, error: err});
     socket.emit("gameError", {name: game.name, error: err});
   });
 
@@ -72,16 +72,26 @@ module.exports.spawn = function(port, args, game, cb)
   {
     //If process exited, code is its final code and signal is null;
     //if it was terminated due to a signal, then code is null.
-    if (signal == null)
+    if (signal === "SIGKILL")
     {
-      rw.log(["error"], `instance.on "exit" event; process exited. Maybe an ingame error occurred, or an arg made it crash. Try launching it without the --notext flag:\n`, {port: port, args: args, game: game.name, code: code, signal: signal});
+      rw.log(["general"], `${game.name}'s was terminated by SIGKILL.`);
+    }
+
+    else if (code === 0)
+    {
+      rw.log(["general"], `${game.name}'s exited without errors (perhaps port was already in use).`);
+    }
+
+    else if (signal == null)
+    {
+      rw.log(["error"], `${game.name}'s "exit" event triggered. Maybe an ingame error occurred, or an arg made it crash. Try launching it without the --notext flag:\n`, {port: port, args: args, code: code, signal: signal});
       socket.emit("gameExited", {name: game.name, code: code});
     }
 
     //SIGKILL would mean that the kill_instance.js code was called, so it's as expected
     else if (game.instance.killed === false && signal !== "SIGKILL")
     {
-      rw.log(["error"], `instance.on "exit" event; process was abnormally terminated:\n`, {port: port, args: args, game: game.name, code: code, signal: signal});
+      rw.log(["error"], `${game.name}'s "exit" event triggered. Process was abnormally terminated:\n`, {port: port, args: args, code: code, signal: signal});
       socket.emit("gameTerminated", {name: game.name, signal: signal});
     }
 
@@ -93,13 +103,22 @@ module.exports.spawn = function(port, args, game, cb)
   //https://stackoverflow.com/questions/37522010/difference-between-childprocess-close-exit-events)
   game.instance.on("close", (code, signal) =>
   {
-    rw.log(["general"], `${game.name}'s stdio closed:\n`, {port: port, args: args, game: game.name, code: code, signal: signal});
+    if (signal === "SIGKILL")
+    {
+      rw.log(["general"], `${game.name}'s stdio got closed by SIGKILL.`);
+    }
+
+    else if (code === 0)
+    {
+      rw.log(["general"], `${game.name}'s stdio got closed with code 0.`);
+    }
 
     //code 0 means there were no errors. If instance is null, then "exit" above
     //must have run already, so don't ping the master server again
     if (game.instance != null && game.instance.killed === false && code !== 0)
     {
       socket.emit("stdioClosed", {name: game.name, code: code, signal: signal});
+      rw.log(["general"], `${game.name}'s stdio closed:\n`, {port: port, args: args, code: code, signal: signal});
     }
   });
 
@@ -112,14 +131,14 @@ module.exports.spawn = function(port, args, game, cb)
     //data from the instance's stderr stream
     game.instance.stderr.on("data", (data) =>
     {
-      rw.log(["general"], `${game.name}'s stderr "data" event triggered:\n`, {game: game.name, data: data});
+      rw.log(["general"], `${game.name}'s stderr "data" event triggered:\n`, data);
       socket.emit("stderrData", {name: game.name, data: data});
     });
 
     //errors from the instance's stderr stream
     game.instance.stderr.on("error", (err) =>
     {
-      rw.log(["error"], `${game.name}'s stderr "error" event triggered:\n`, {port: port, args: args, game: game.name, error: err});
+      rw.log(["error"], `${game.name}'s stderr "error" event triggered:\n`, {port: port, args: args, error: err});
       socket.emit("stderrError", {name: game.name, error: err});
     });
   }
@@ -128,7 +147,7 @@ module.exports.spawn = function(port, args, game, cb)
   {
     game.instance.stdin.on('error', function (err)
     {
-      rw.log(["error"], `${game.name}'s stdin "error" event triggered:\n`, {port: port, args: args, game: game.name, error: err});
+      rw.log(["error"], `${game.name}'s stdin "error" event triggered:\n`, {port: port, args: args, error: err});
       socket.emit("stdinError", {name: game.name, error: err});
     });
   }
@@ -138,13 +157,13 @@ module.exports.spawn = function(port, args, game, cb)
     game.instance.stdout.setEncoding("utf8");
     /*game.instance.stdout.on('data', function (data)
     {
-      rw.log(["general"], `${game.name}'s stdout "data" event triggered:\n`, {game: game.name, data: data});
+      rw.log(["general"], `${game.name}'s stdout "data" event triggered:\n`, {data: data});
       socket.emit("stdoutData", {name: game.name, data: data});
     });*/
 
     game.instance.stdout.on('error', function (err)
     {
-      rw.log(["error"], `${game.name}'s stdout "error" event triggered:\n`, {port: port, args: args, game: game.name, error: err});
+      rw.log(["error"], `${game.name}'s stdout "error" event triggered:\n`, {port: port, args: args, error: err});
       socket.emit("stdoutError", {name: game.name, error: err});
     });
   }

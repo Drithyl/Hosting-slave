@@ -11,9 +11,9 @@ module.exports.kill = function(game, cb)
     maxTries = 3;
   }
 
-  if (game.instance == null || game.instance.killed === true)
+  if (game.instance == null/* || game.instance.killed === true*/)
   {
-    rw.log(`general`, `${game.name}'s instance is already null or killed.`);
+    rw.log(`general`, `${game.name}'s instance is already null.`);
     game.instance = null;
     cb(null);
     return;
@@ -23,11 +23,10 @@ module.exports.kill = function(game, cb)
   {
     //The signal SIGKILL seems to set the flag .killed to true
     //in instances even before they are terminated, so it's a valid check
-    if (game.instance == null || game.instance.killed === true)
+    if (game.instance == null/* || game.instance.killed === true*/)
     {
       //success
       game.instance = null;
-      rw.log(`general`, `${game.name}'s instance was killed.`);
       cb(null);
       return;
     }
@@ -54,10 +53,20 @@ module.exports.kill = function(game, cb)
 
     tries++;
 
-    //stdin must be paused for a node instance to exit
+    //destroy all data streams before killing the instance
+    if (game.instance.stderr != null)
+    {
+      game.instance.stderr.destroy();
+    }
+
     if (game.instance.stdin != null)
     {
-      game.instance.stdin.pause();
+      game.instance.stdin.destroy();
+    }
+
+    if (game.instance.stdout != null)
+    {
+      game.instance.stdout.destroy();
     }
 
     //The SIGKILL signal is the one that kills a process
