@@ -1,76 +1,88 @@
 
 const rw = require("./reader_writer.js");
+const isPortInUse = require("./check_port.js");
 
 module.exports.kill = function(game, cb)
 {
-  var tries = 0;
-  var maxTries = 3;
-
-  if (isNaN(maxTries) === true)
+  (function killAttempt(game, attempts, maxAttempts, cb)
   {
-    maxTries = 3;
-  }
-
-  if (game.instance == null/* || game.instance.killed === true*/)
-  {
-    rw.log(`general`, `${game.name}'s instance is already null.`);
-    game.instance = null;
-    cb(null);
-    return;
-  }
-
-  (function killAttempt()
-  {
-    //The signal SIGKILL seems to set the flag .killed to true
-    //in instances even before they are terminated, so it's a valid check
-    if (game.instance == null/* || game.instance.killed === true*/)
+    if (isNaN(maxAttempts) === true)
     {
-      //success
-      game.instance = null;
-      cb(null);
-      return;
+      maxAttempts = 3;
     }
 
-    if (tries > maxTries)
+    if (game.instance != null)
     {
-      //if an exitCode exists and it is not 0, it is likely that this instance was bugged,
-      //and was not working properly in the first place
-      if (game.instance.exitCode != null && game.instance.exitCode !== 0)
+      //destroy all data streams before killing the instance
+      if (game.instance.stderr != null)
       {
-        rw.logError({exitCode: game.instance.exitCode, instance: game.instance}, `${game.name}'s instance is still not killed after ${maxTries} attempts. exitCode is ${game.instance.exitCode}.`);
-        game.instance = null;
-        cb(`${game.name}'s instance is still not killed after ${maxTries} attempts. It seems that the instance contained an error.`, null);
+        game.instance.stderr.destroy();
       }
 
-      else
+      if (game.instance.stdin != null)
       {
-        rw.logError({instance: game.instance}, `${game.name}'s instance is still not killed after ${maxTries} attempts.`);
-        cb(`${game.name}'s instance is still not killed after ${maxTries} attempts.`, null);
+        game.instance.stdin.destroy();
       }
 
-      return;
+      if (game.instance.stdout != null)
+      {
+        game.instance.stdout.destroy();
+      }
+
+      game.instance.kill("SIGTERM");
     }
 
-    tries++;
-
-    //destroy all data streams before killing the instance
-    if (game.instance.stderr != null)
+    setTimeout(function()
     {
-      game.instance.stderr.destroy();
-    }
+      isPortInUse(game.port, function(returnVal)
+      {
+        if (returnVal === true || game.instance != null)
+        {
+          //max attempts reached, call back
+          if (attempts >= maxAttempts)
+          {
+            if (game.instance == null)
+            {
+              rw.log("error", `${game.name}'s instance was terminated but the port is still in use after ${maxAttempts} attempts.`);
+              cb(`The game instance was terminated, but the port is still in use. You might have to wait a bit.`);
+            }
 
-    if (game.instance.stdin != null)
-    {
-      game.instance.stdin.destroy();
-    }
+            else
+            {
+              rw.log("error", `${game.name}'s instance is still not killed after ${maxAttempts} attempts. exitCode is ${game.instance.exitCode}.`, {exitCode: game.instance.exitCode, instance: game.instance});
+              cb(`The game instance could not be killed after ${maxAttempts}. It seems that the instance contained an error.`);
+            }
 
-    if (game.instance.stdout != null)
-    {
-      game.instance.stdout.destroy();
-    }
+            return;
+          }
 
-    //The SIGKILL signal is the one that kills a process
-    game.instance.kill("SIGKILL");
-    setTimeout(killAttempt, 600);
-  })();
+          else killAttempt(game, attempts++, maxAttempts, cb);
+        }
+
+        //All good
+        else cb(null);
+      });
+
+    }, 3000);
+
+  })(game, 0, 3, cb);
 }
+
+//The SIGKILL signal is the one that kills a process
+/*if (process.platform === "linux")
+{
+  rw.log("general", 'Running on Linux, attempting the kill <pid> command...');
+  const {spawn} = require('child_process');
+  const kill = spawn('kill', [-game.instance.pid]);
+  attempts = 999;
+
+  kill.on("close", (code) =>
+  {
+    if (code === 0)
+    {
+      rw.log("general", `${game.name}'s instance was killed? Kill command closed with code ${code}.`);
+    }
+
+    else rw.log("error", `"kill" command closed with code ${code}; ${game.name}'s instance might not be terminated.`);
+  });
+}*/
