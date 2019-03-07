@@ -20,12 +20,12 @@ if (gameName == null)
 
 if (preexecRegex.test(type) === true)
 {
-  target += `${config.latestTurnBackupDirName}/${gameName}/Turn ${turn}`;
+  target += `${config.latestTurnBackupDirName}/${gameName}/`;
 }
 
 else if (postexecRegex.test(type) === true)
 {
-  target += `${config.newTurnsBackupDirName}/${gameName}/Turn ${turn}`;
+  target += `${config.newTurnsBackupDirName}/${gameName}/`;
 }
 
 else
@@ -64,6 +64,8 @@ fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, con
   {
     turn++;
   }
+
+  target += `Turn ${turn}`;
 
   rw.copyDir(source, target, false, ["", ".2h", ".trn"], function(err)
   {
