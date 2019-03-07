@@ -101,16 +101,7 @@ module.exports.isGameNameUsed = function(name, gameType)
 
 module.exports.killGame = function(port, cb)
 {
-  kill(games[port], function(err)
-  {
-    if (err)
-    {
-      cb(err, null);
-      return;
-    }
-
-    else cb(null);
-  });
+  kill(games[port], cb);
 };
 
 module.exports.nukeGame = function(port, cb)
@@ -141,7 +132,7 @@ module.exports.shutDownGames = function(cb)
       next();
     }
 
-    if (game.instance == null)
+    else if (game.instance == null)
     {
       rw.log("general", `${game.name}'s instance is already null.`);
       next();

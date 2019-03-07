@@ -97,8 +97,7 @@ socket.on("reconnect_error", function(attemptNumber)
 //fired when it can't reconnect within reconnectionAttempts
 socket.on("reconnect_failed", function()
 {
-  //rw.log("general", `Could not reconnect to the master server after all the set reconnectionAttempts. Shutting games down.`);
-  gameInterface.shutDownGames();
+  //rw.log("general", `Could not reconnect to the master server after all the set reconnectionAttempts.`);
 });
 
 /*********************************
