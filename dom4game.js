@@ -122,6 +122,7 @@ module.exports.restart = function(data, cb)
 
 module.exports.changeCurrentTimer = function(data, cb)
 {
+  rw.log("general", `Attempting to kill ${games[data.port].name} to change current timer...`);
   kill(games[data.port], function(err)
   {
     if (err)
@@ -134,7 +135,7 @@ module.exports.changeCurrentTimer = function(data, cb)
     {
       if (err)
       {
-        cb(`An error occurred when trying to rehost the game to change the current timer.`);
+        cb(`An error occurred when trying to rehost ${games[data.port].name} to change the current timer.`);
         return;
       }
 
@@ -269,29 +270,5 @@ module.exports.rollback = function(data, cb)
 
       cb(null);
     });
-  });
-};
-
-module.exports.getTurnInfo = function(data, cb)
-{
-  fs.readFile(`${config.statusPageBasePath}/${games[data.port].name}_status`, "utf8", (err, content) =>
-  {
-    if (err)
-    {
-      //Path not found error; file doesn't exist so game has not started
-      if (err.message.includes("ENOENT") === true)
-      {
-        cb(null, "");
-        return;
-      }
-
-      else
-      {
-        cb(err, null);
-        return;
-      }
-    }
-
-    cb(null, content);
   });
 };

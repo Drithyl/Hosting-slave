@@ -52,10 +52,16 @@ socket.on("disconnect", function(reason)
   //the ports will be reserved for no instance
   hoster.releaseAllPorts();
 
-  rw.log(`general`, "Shutting down games...");
+  /*rw.log(`general`, "Shutting down games...");
   gameInterface.shutDownGames(function()
   {
     rw.log(`general`, "Finished shutting down games.");
+  });*/
+
+  rw.log(`general`, "Freezing games...");
+  gameInterface.freezeGames(function()
+  {
+    rw.log(`general`, "Finished freezing games.");
   });
 
   if (reason === "io server disconnect")
@@ -203,12 +209,6 @@ socket.on("host", function(data, serverCb)
   if (gameInterface.matchName(data.port, data.name) === false)
   {
     serverCb("The game's name and port do not match.", null);
-    return;
-  }
-
-  if (gameInterface.isGameRunning(data.port) === true)
-  {
-    serverCb(null, `The game is already up and running.`);
     return;
   }
 

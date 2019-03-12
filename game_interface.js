@@ -2,6 +2,7 @@
 const fs = require("fs");
 const config = require("./config.json");
 const rw = require("./reader_writer.js");
+const timerParser = require("./timer_parser.js");
 const kill = require("./kill_instance.js").kill;
 const spawn = require("./process_spawn.js").spawn;
 
@@ -118,6 +119,53 @@ module.exports.nukeGame = function(port, cb)
     else cb(null);
   });
 };
+
+module.exports.freezeGames = function()
+{
+  Object.keys(games).forEachAsync(function(port, index, next)
+  {
+    let game = games[port];
+
+    if (game == null)
+    {
+      rw.log("general", `Port key ${port} contains a null game.`);
+      delete games[port];
+      next();
+    }
+
+    else if (game.instance == null)
+    {
+      rw.log("general", `${game.name}'s instance is null; no need to freeze.`);
+      next();
+    }
+
+    timerParser.getTimer(game.name, function(err, timer)
+    {
+      if (err)
+      {
+        rw.log("error", `${game.name}'s timer could not be parsed, cannot freeze.`);
+        next();
+        return;
+      }
+
+      if (timer.turn === 0)
+      {
+        rw.log("general", `${game.name}'s has not started. No need to freeze.`);
+        next();
+        return;
+      }
+
+      game.frozen = true;
+
+      //pause timer
+      timer.isPaused = true;
+      handlers[port].call.changeCurrentTimer({port: port, timer: timer}, function()
+      {
+        next();
+      });
+    });
+  });
+}
 
 module.exports.shutDownGames = function(cb)
 {
@@ -274,21 +322,47 @@ module.exports.rollback = function(data, cb)
 
 module.exports.requestHosting = function(port, args, socket, cb)
 {
-  gameHostRequests.push(port);
+  let game = games[port];
 
-  //if null args, use defaults
-  if (args == null)
+  if (game.instance != null && game.frozen === true)
   {
-    args = games[port].args;
+    handlers[port].call.changeCurrentTimer({port: port, timer: args}, function(err)
+    {
+      if (err)
+      {
+        rw.log("error", `An error occurred when changing the current timer of the frozen game ${game.name}.`);
+        cb(`An error occurred when changing the current timer of the frozen game ${game.name}.`);
+      }
+
+      else cb();
+    });
   }
 
-  //sets a delay so that when many host requests are received, the server
-  //does not get overloaded
-  setTimeout(function()
+  else if (game.instance != null)
   {
-    spawn(port, args, games[port], cb);
+    rw.log("general", `The game ${game.name}'s instance is not null; cannot host over it.`);
+    cb();
+  }
 
-  }, config.gameHostMsDelay * gameHostRequests.length);
+  else
+  {
+    gameHostRequests.push(port);
+
+    //if null args, use defaults
+    if (args == null)
+    {
+      args = games[port].args;
+    }
+
+    //sets a delay so that when many host requests are received, the server
+    //does not get overloaded
+    setTimeout(function()
+    {
+      gameHostRequests.splice(gameHostRequests.indexOf(port), 1);
+      spawn(port, args, games[port], cb);
+
+    }, config.gameHostMsDelay * gameHostRequests.length);
+  }
 };
 
 module.exports.isGameRunning = function(port)
@@ -343,12 +417,19 @@ module.exports.getStales = function(data, cb)
 
 module.exports.getTurnInfo = function(data, cb)
 {
-  if (typeof handlers[data.port].call.getTurnInfo !== "function")
-  {
-    cb("This game does not support the getTurnInfo function.");
-  }
+  var game = games[data.port];
 
-  else handlers[data.port].call.getTurnInfo(data, cb);
+  timerParser.getTimer(game.name, function(err, timer)
+  {
+    if (err)
+    {
+      rw.log("error", `An error occurred when getting ${game.name}'s timer info: `, err);
+      cb(`An error occurred when getting ${game.name}'s timer info.`);
+      return;
+    }
+
+    cb(null, timer);
+  });
 };
 
 module.exports.getDump = function(data, cb)

@@ -2,6 +2,7 @@
 const fs = require("fs");
 const rw = require("./reader_writer.js");
 const provCountFn = require("./province_count_module.js");
+const timerParser = require("./timer_parser.js");
 const kill = require("./kill_instance.js").kill;
 const spawn = require("./process_spawn.js").spawn;
 const config = require("./config.json");
@@ -206,8 +207,9 @@ module.exports.restart = function(data, cb)
 module.exports.changeCurrentTimer = function(data, cb)
 {
   var path = `${config.dom5DataPath}/savedgames/${games[data.port].name}/domcmd`;
+  var timer = timerParser.getTotalSeconds(data.timer);
 
-  fs.writeFile(path, "settimeleft " + data.timer, function(err)
+  fs.writeFile(path, "settimeleft " + timer, function(err)
   {
     if (err)
     {
@@ -350,34 +352,6 @@ module.exports.getStales = function(data, cb)
   }
 
   cb(null, {ai: aiArray, stales: staleArray});
-};
-
-module.exports.getTurnInfo = function(data, cb)
-{
-  var game = games[data.port];
-  var path = `${config.statusPageBasePath}/${games[data.port].name}_status`;
-
-  fs.readFile(path, "utf8", (err, content) =>
-  {
-    if (err)
-    {
-      //Path not found error; file doesn't exist so game has not started
-      if (err.message.includes("ENOENT") === true)
-      {
-        cb(null, "");
-        return;
-      }
-
-      else
-      {
-        rw.logError({data: data, path: path}, `fs.readFile Error:`, err);
-        cb(err, null);
-        return;
-      }
-    }
-
-    cb(null, content);
-  });
 };
 
 module.exports.getDump = function(data, cb)
