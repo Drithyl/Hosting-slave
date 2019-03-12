@@ -54,7 +54,7 @@ module.exports.spawn = function(port, args, game, cb)
   //instances get overloaded if they spent ~24h with their stdio being listened to,
   //and end up freezing (in windows server 2012), according to tests in previous bot versions
   //TODO: testing not ignoring the stdio again
-	game.instance = spawn(path, args, {stdio: 'ignore'});
+	game.instance = spawn(path, args/*, {stdio: 'ignore'}*/);
   rw.log("general", `Process for ${game.name} spawned.`);
 
   //The process could not be spawned, or
@@ -152,14 +152,16 @@ module.exports.spawn = function(port, args, game, cb)
     });
   }
 
+  //dom instances print stdout very often. This is probably what leads to buffer
+  //overflow and the instances hanging when it's not being ignored nor caught
   if (game.instance.stdout != null)
   {
     game.instance.stdout.setEncoding("utf8");
-    /*game.instance.stdout.on('data', function (data)
+    game.instance.stdout.on('data', function (data)
     {
-      rw.log(["general"], `${game.name}'s stdout "data" event triggered:\n`, {data: data});
-      socket.emit("stdoutData", {name: game.name, data: data});
-    });*/
+      //rw.log(["general"], `${game.name}'s stdout "data" event triggered:\n`, {data: data});
+      //socket.emit("stdoutData", {name: game.name, data: data});
+    });
 
     game.instance.stdout.on('error', function (err)
     {
