@@ -214,16 +214,6 @@ module.exports.getTotalSeconds = function(timer)
   //if the timer is passed as an object, convert it to seconds
   if (typeof timer === "object")
   {
-    if (timer.isPaused === true)
-    {
-      return 0;
-    }
-
-    else if (isNaN(timer.totalSeconds) === false)
-    {
-      return timer.totalSeconds;
-    }
-
     if (isNaN(timer.days) === false)
     {
       seconds += timer.days * 3600 * 24;
@@ -231,7 +221,7 @@ module.exports.getTotalSeconds = function(timer)
 
     if (isNaN(timer.hours) === false)
     {
-      seconds += timer.days * 3600;
+      seconds += timer.hours * 3600;
     }
 
     if (isNaN(timer.minutes) === false)
