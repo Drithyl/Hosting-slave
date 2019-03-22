@@ -260,7 +260,7 @@ module.exports.getSubmittedPretenders = function(data, cb)
     {
       //include both the filename and the nation name in the list, as
       //required by the master server.
-      nationList.push({name: nation.nationName, filename: filename});
+      nationList.push({name: nation.nationName, fullName: nation.nationFullName, filename: filename, number: nation.nationNbr});
     }
   }
 
@@ -336,7 +336,7 @@ module.exports.getStales = function(data, cb)
     //A 2 in the controller of the nation means that the nation just went AI this processed turn
     if (dump[files[i]].controller == 2)
     {
-      aiArray.push(dump[filename].nationName);
+      aiArray.push({name: dump[filename].nationName, filename: dump[filename]});
       continue;
     }
 
@@ -348,7 +348,7 @@ module.exports.getStales = function(data, cb)
     }
 
     //stale
-    staleArray.push(dump[files[i]].nationName);
+    staleArray.push({name: dump[filename].nationName, filename: dump[filename]});
   }
 
   cb(null, {ai: aiArray, stales: staleArray});
@@ -497,10 +497,13 @@ function parseDump(name)
 
     var nationFilenameStart = lines[i].replace(/Nation\s+(\-?\d+\s+)+/, "");
     var nationFilename = nationFilenameStart.slice(0, nationFilenameStart.search(/\s+/)).trim() + ".2h";
-    var nationName = nationFilenameStart.slice(nationFilenameStart.search(/\s+/)).trim().replace("\t", ", ");
+    var nationFullName = nationFilenameStart.slice(nationFilenameStart.search(/\s+/)).trim().replace("\t", ", ");
     dumpObj[nationFilename] = {};
     lineNumbers = lines[i].match(/\-?\d+/g);
-    dumpObj[nationFilename].nationName = nationName;
+    dumpObj[nationFilename].filename = `${nationFilename}.2h`;
+
+    dumpObj[nationFilename].nationFullName = nationFullName;
+    dumpObj[nationFilename].nationName = nationFullName.slice(0, nationFullName.indexOf(","));
 
     //the nation number
     dumpObj[nationFilename].nationNbr = +lineNumbers[0];
