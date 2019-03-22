@@ -267,7 +267,7 @@ socket.on("deleteGameData", function(data, serverCb)
     return;
   }
 
-  gameInterface.deleteGameData(data.port, serverCb);
+  gameInterface.deleteGameData(data, serverCb);
 });
 
 

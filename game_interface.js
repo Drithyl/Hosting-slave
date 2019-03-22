@@ -454,7 +454,7 @@ module.exports.getLastHostedTime = function(data, cb)
 
 module.exports.deleteGameSavefiles = function(data, cb)
 {
-  kill(games[port], function(err)
+  kill(games[data.port], function(err)
   {
     if (err)
     {
@@ -466,9 +466,9 @@ module.exports.deleteGameSavefiles = function(data, cb)
   });
 };
 
-module.exports.deleteGameData = function(port, cb)
+module.exports.deleteGameData = function(data, cb)
 {
-  kill(games[port], function(err)
+  kill(games[data.port], function(err)
   {
     if (err)
     {
@@ -476,8 +476,8 @@ module.exports.deleteGameData = function(port, cb)
       return;
     }
 
-    delete games[port];
-    delete handlers[port];
+    delete games[data.port];
+    delete handlers[data.port];
     saveGames(cb);
   });
 };
