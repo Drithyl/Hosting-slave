@@ -155,10 +155,17 @@ module.exports.freezeGames = function()
         return;
       }
 
-      game.frozen = true;
+      rw.log("general", `Freezing ${game.name}'s timer...`);
+
+      game.frozenTimer = timerParser.getTotalSeconds(timer);
 
       //pause timer
       timer.isPaused = true;
+      timer.days = 0;
+      timer.hours = 0;
+      timer.minutes = 0;
+      timer.seconds = 0;
+
       handlers[port].call.changeCurrentTimer({port: port, timer: timer}, function()
       {
         next();
@@ -324,9 +331,10 @@ module.exports.requestHosting = function(port, args, socket, cb)
 {
   let game = games[port];
 
-  if (game.instance != null && game.frozen === true)
+  if (game.instance != null && game.frozenTimer != null)
   {
-    handlers[port].call.changeCurrentTimer({port: port, timer: args}, function(err)
+    rw.log("general", `Restoring ${game.name}'s frozen timer...`);
+    handlers[port].call.changeCurrentTimer({port: port, timer: game.frozenTimer}, function(err)
     {
       if (err)
       {
@@ -334,18 +342,23 @@ module.exports.requestHosting = function(port, args, socket, cb)
         cb(`An error occurred when changing the current timer of the frozen game ${game.name}.`);
       }
 
-      else cb();
+      else
+      {
+        rw.log("general", `${game.name}'s timer restored.`);
+        cb();
+      }
     });
   }
 
   else if (game.instance != null)
   {
-    rw.log("general", `The game ${game.name}'s instance is not null; cannot host over it.`);
+    rw.log("general", `The game ${game.name}'s instance is already running.`);
     cb();
   }
 
   else
   {
+    rw.log("general", `Requesting hosting for ${game.name}...`);
     gameHostRequests.push(port);
 
     //if null args, use defaults
