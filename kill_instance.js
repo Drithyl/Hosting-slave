@@ -6,10 +6,7 @@ module.exports.kill = function(game, cb)
 {
   (function killAttempt(game, attempts, maxAttempts, cb)
   {
-    if (isNaN(maxAttempts) === true)
-    {
-      maxAttempts = 3;
-    }
+    rw.log("general", `Attempt ${attempts}. Max attempts ${maxAttempts}.`);
 
     if (game.instance != null)
     {
@@ -29,60 +26,95 @@ module.exports.kill = function(game, cb)
         game.instance.stdout.destroy();
       }
 
-      game.instance.kill("SIGTERM");
+      //The SIGKILL signal is the one that kills a process
+      if (process.platform === "linux")
+      {
+        rw.log("general", 'Running on Linux, attempting the domk bash /home/steam/bin/domk.sh ...');
+
+        const {spawn} = require('child_process');
+        const domk = spawn('/home/steam/bin/domk.sh', [game.port]/*, {shell: true}*/);
+
+        domk.on("error", (err) =>
+        {
+          rw.log("error", "Error occurred when running domk: ", err);
+        });
+
+        domk.stdout.on('data', (data) => {
+          rw.log("general", "domk stdout data: ", data);
+        });
+
+        domk.stderr.on('data', (data) => {
+          rw.log("general", "domk stderr data: ", data);
+        });
+
+        domk.on("close", (code, signal) =>
+        {
+          rw.log("general", `domk script closed with code ${code} and signal ${signal}.`);
+        });
+
+        domk.on("exit", (code, signal) =>
+        {
+          rw.log("general", `domk script exited with code ${code} and signal ${signal}.`);
+        });
+      }
+
+      else if (attempts === maxAttempts - 1)
+      {
+        game.instance.kill("SIGKILL");
+      }
+
+      else
+      {
+        game.instance.kill("SIGTERM");
+      }
     }
 
     setTimeout(function()
     {
+      rw.log("general", "Checking if port is still in use...");
+
       isPortInUse(game.port, function(returnVal)
       {
-        if (returnVal === true || game.instance != null)
-        {
-          //max attempts reached, call back
-          if (attempts >= maxAttempts)
-          {
-            if (game.instance == null)
-            {
-              rw.log("error", `${game.name}'s instance was terminated but the port is still in use after ${maxAttempts} attempts.`);
-              cb(`The game instance was terminated, but the port is still in use. You might have to wait a bit.`);
-            }
-
-            else
-            {
-              rw.log("error", `${game.name}'s instance is still not killed after ${maxAttempts} attempts. exitCode is ${game.instance.exitCode}.`, {exitCode: game.instance.exitCode, instance: game.instance});
-              cb(`The game instance could not be killed after ${maxAttempts}. It seems that the instance contained an error.`);
-            }
-
-            return;
-          }
-
-          else killAttempt(game, attempts++, maxAttempts, cb);
-        }
+        rw.log("general", `isPortInUse returns ${returnVal}`);
 
         //All good
-        else cb(null);
+        if (returnVal === false && game.instance == null)
+        {
+          rw.log("general", "Port not in use, instance is null. Success.");
+          cb(null);
+          return;
+        }
+
+        rw.log("general", "Instance is not killed either.");
+        //max attempts reached, call back
+        if (attempts >= maxAttempts)
+        {
+          if (returnVal === false && game.instance != null)
+          {
+            rw.log("error", `${game.name}'s instance is still not killed after ${maxAttempts} attempts, but the port was freed up.`);
+            cb(`The game instance could not be killed after ${maxAttempts}, but the port was preed up.`);
+          }
+
+          if (returnVal === true && game.instance == null)
+          {
+            rw.log("error", `${game.name}'s instance was terminated but the port is still in use after ${maxAttempts} attempts.`);
+            cb(`The game instance was terminated, but the port is still in use. You might have to wait a bit.`);
+          }
+
+          else
+          {
+            rw.log("error", `${game.name}'s instance could not be terminated and the port is still in use after ${maxAttempts} attempts.`);
+            cb(`The game instance could not be terminated and the port is still in use. You might have to wait a bit.`);
+          }
+        }
+
+        else
+        {
+          killAttempt(game, ++attempts, maxAttempts, cb);
+        }
       });
 
     }, 3000);
 
   })(game, 0, 3, cb);
 }
-
-//The SIGKILL signal is the one that kills a process
-/*if (process.platform === "linux")
-{
-  rw.log("general", 'Running on Linux, attempting the kill <pid> command...');
-  const {spawn} = require('child_process');
-  const kill = spawn('kill', [-game.instance.pid]);
-  attempts = 999;
-
-  kill.on("close", (code) =>
-  {
-    if (code === 0)
-    {
-      rw.log("general", `${game.name}'s instance was killed? Kill command closed with code ${code}.`);
-    }
-
-    else rw.log("error", `"kill" command closed with code ${code}; ${game.name}'s instance might not be terminated.`);
-  });
-}*/

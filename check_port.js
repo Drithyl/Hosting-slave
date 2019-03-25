@@ -28,6 +28,7 @@ module.exports = function(port, cb)
     {
       if (cbWasCalled === false)
       {
+        server.close();
         cb(true);
         cbWasCalled = true;
       }
@@ -35,6 +36,7 @@ module.exports = function(port, cb)
 
     else if (cbWasCalled === false)
     {
+      server.close();
       cb(false);
       cbWasCalled = true;
     }
@@ -55,6 +57,7 @@ module.exports = function(port, cb)
   {
     if (cbWasCalled === false)
     {
+      server.close();
       rw.log("error", `Server listening on port ${port} did not get an answer after ${timeoutMs}ms.`);
       cb(false);
       cbWasCalled = true;
