@@ -228,7 +228,7 @@ module.exports.isPortInUse = function(port)
 
 module.exports.matchName = function(port, name)
 {
-  if (games[port].name === name)
+  if (games[port].name.toLowerCase() === name.toLowerCase())
   {
     return true;
   }
