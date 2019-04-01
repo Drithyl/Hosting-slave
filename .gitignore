@@ -1,1 +1,6 @@
 *.ini
+*.bat
+*.txt
+node_modules/
+package.json
+package-lock.json
