@@ -93,20 +93,25 @@ module.exports.convert = function(data, serverCb)
 
 module.exports.deleteV2Data = function(data, serverCb)
 {
-  try
+  console.log(`Attempting to delete old data for game ${data.name}...`);
+  rw.deleteDirContents(`C:/Users/Administrator/Desktop/Bots/MrClockwork/games/${data.name}`, null, function(err)
   {
-    console.log(`Attempting to delete old data...`);
-    fs.unlinkSync(`C:/Users/Administrator/Desktop/Bots/MrClockwork/games/${data.name}/data.json`);
-    fs.unlinkSync(`C:/Users/Administrator/Desktop/Bots/MrClockwork/games/${data.name}/status`);
-    fs.rmdirSync(`C:/Users/Administrator/Desktop/Bots/MrClockwork/games/${data.name}/`);
-    console.log(`Deleted successfully.`);
-    serverCb();
-  }
+    if (err)
+    {
+      rw.log("error", `Error occurred while deleting v2 data for game ${data.name}: `, err);
+      serverCb(`An error occurred when deleting the old data: ${err}`);
+    }
 
-  catch(err)
-  {
-    console.log(`An error occurred when deleting old data: ${err}`);
-    rw.log("error", `Error occurred while deleting v2 data for game ${data.name}: `, err);
-    serverCb(err);
-  }
+    fs.rmdir(`C:/Users/Administrator/Desktop/Bots/MrClockwork/games/${data.name}`, function(err)
+    {
+      if (err)
+      {
+        rw.log("error", `Error occurred while deleting v2 remaining directory for game ${data.name}: `, err);
+        serverCb(`An error occurred when deleting the old remaining directory: ${err}`);
+      }
+
+      serverCb();
+      console.log(`Deleted successfully.`);
+    });
+  });
 };
