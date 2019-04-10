@@ -400,6 +400,15 @@ function writeMapFiles(zipfile, entries, gameType, cb)
 
       let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
 
+      writeStream.on('error', function(err)
+      {
+        errors.push(err);
+        writeStream.end();
+        rw.log("upload", `Error occurred during writeStream for file ${entry.fileName}:`, err);
+        next();
+        return;
+      });
+
       //write the stream to the correspondent path
       readStream.pipe(writeStream);
     });
@@ -501,6 +510,15 @@ function writeModFiles(zipfile, entries, gameType, cb)
         });
 
         let writeStream = fs.createWriteStream(`${dataPath}/${entry.fileName}`);
+
+        writeStream.on('error', function(err)
+        {
+          errors.push(err);
+          writeStream.end();
+          rw.log("upload", `Error occurred during writeStream for file ${entry.fileName}:`, err);
+          next();
+          return;
+        });
 
         //write the stream to the correspondent path
         readStream.pipe(writeStream);

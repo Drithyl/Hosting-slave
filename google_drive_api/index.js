@@ -264,6 +264,12 @@ module.exports.downloadFile = function(fileId, downloadPath, callback)
   const drive = google.drive({version:"v3", oAuth2Object});
   var dest = fs.createWriteStream(downloadPath);
 
+  dest.on('error', function(err) {
+    dest.end();
+    callback(err);
+    return;
+  });
+
   //get file as a stream, then
   //auth must be passed as option with the oAuth2 object that was obtained in the initialization
   //with the authorize() function.
