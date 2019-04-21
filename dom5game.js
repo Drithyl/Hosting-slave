@@ -227,8 +227,16 @@ module.exports.changeCurrentTimer = function(data, cb)
 module.exports.changeDefaultTimer = function(data, cb)
 {
   var path = `${config.dom5DataPath}/savedgames/${games[data.port].name}/domcmd`;
+  var domcmd = `setinterval ${Math.floor(timerParser.getTotalSeconds(data.timer) / 60)}\n`;
 
-  fs.writeFile(path, "setinterval " + data.timer + "\nsettimeleft " + data.currentTimer, function(err)
+  //set currentTimer to what it was again, because setinterval changes the
+  //current timer as well
+  if (data.currentTimer != null)
+  {
+    domcmd += `settimeleft ${data.currentTimer}`;
+  }
+
+  fs.writeFile(path, domcmd, function(err)
   {
     if (err)
     {

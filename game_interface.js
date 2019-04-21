@@ -166,10 +166,39 @@ module.exports.freezeGames = function()
       timer.minutes = 0;
       timer.seconds = 0;
 
-      handlers[port].call.changeCurrentTimer({port: port, timer: timer}, function()
+      if (typeof handlers[port].call.changeDefaultTimer === "function")
       {
-        next();
-      });
+        //change the default timer if available, otherwise if a new turn happens while
+        //the bot is down the timer will no longer be frozen and will tick
+        //down without any announcements having been made. changeDefaultTimer
+        //will also change the current timer if no currentTimer option is provided
+        handlers[port].call.changeDefaultTimer({port: port, timer: timer}, function(err)
+        {
+          if (err)
+          {
+            rw.log("error", `${game.name}'s default timer could not be frozen: ${err}`);
+          }
+
+          else rw.log("general", `${game.name}'s default timer frozen.`);
+
+          next();
+        });
+      }
+
+      else
+      {
+        handlers[port].call.changeCurrentTimer({port: port, timer: timer}, function(err)
+        {
+          if (err)
+          {
+            rw.log("error", `${game.name}'s current timer could not be frozen: ${err}`);
+          }
+
+          else rw.log("general", `${game.name}'s current timer frozen.`);
+
+          next();
+        });
+      }
     });
   });
 }
