@@ -1,6 +1,7 @@
 
 const rw = require("./reader_writer.js");
 const isPortInUse = require("./check_port.js");
+const msBetweenAttempts = 5000;
 
 module.exports.kill = function(game, cb)
 {
@@ -114,7 +115,7 @@ module.exports.kill = function(game, cb)
         }
       });
 
-    }, 3000);
+    }, msBetweenAttempts);
 
   })(game, 0, 3, cb);
 }

@@ -13,6 +13,7 @@ module.exports = function(port, cb)
 {
   var cbWasCalled = false;
   var timeoutMs = 30000;
+  var msToCloseServer = 3000;
 
   var server = net.createServer(function(socket)
   {
@@ -37,7 +38,13 @@ module.exports = function(port, cb)
     else if (cbWasCalled === false)
     {
       server.close();
-      cb(false);
+
+      //give a few seconds to close the server properly before the cb
+      setTimeout(() =>
+      {
+        cb(false);
+      }, msToCloseServer);
+
       cbWasCalled = true;
     }
   });
@@ -48,7 +55,12 @@ module.exports = function(port, cb)
 
     if (cbWasCalled === false)
     {
-      cb(false);
+      //give a few seconds to close the server properly before the cb
+      setTimeout(() =>
+      {
+        cb(false);
+      }, msToCloseServer);
+
       cbWasCalled = true;
     }
   });
@@ -62,5 +74,5 @@ module.exports = function(port, cb)
       cb(false);
       cbWasCalled = true;
     }
-  });
+  }, timeoutMs);
 };

@@ -162,7 +162,10 @@ module.exports.restart = function(data, cb)
   var game = games[data.port];
   var path = `${config.dom5DataPath}/savedgames/${game.name}`;
 
-  rw.deleteDirContents(path, ["", ".2h", ".trn"], function(err)
+  //must delete statusdump.txt as well, otherwise when players type
+  //!pretenders, it will read the old statusdump file and show existing
+  //pretenders that have been deleted
+  rw.deleteDirContents(path, ["", ".2h", ".trn", ".txt"], function(err)
   {
     if (err)
     {
@@ -253,6 +256,7 @@ module.exports.getSubmittedPretenders = function(data, cb)
   var nationList = [];
   var game = games[data.port];
   var dump = parseDump(game.name);
+  var savedPath = `${config.dom5DataPath}/savedgames/${game.name}`;
 
 	if (dump == null)
 	{
@@ -264,8 +268,15 @@ module.exports.getSubmittedPretenders = function(data, cb)
   {
     var nation = dump[filename];
 
+    //must verify both that it's human controlled and that its file exists
     if (nation.controller === 1)
     {
+      if (fs.existsSync(`${savedPath}/${filename}`) === false)
+      {
+        rw.log("error", `The nation ${filename} in the game ${game.name} is human controlled in the statusdump but its file does not exist. Perhaps the statusdump is old (from a restart?)`);
+        continue;
+      }
+
       //include both the filename and the nation name in the list, as
       //required by the master server.
       nationList.push({name: nation.nationName, fullName: nation.nationFullName, filename: filename, number: nation.nationNbr});
