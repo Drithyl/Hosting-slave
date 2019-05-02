@@ -5,9 +5,10 @@ const rw = require("./reader_writer.js");
 
 module.exports.getTimer = function(gameName, cb)
 {
+  //probably not started so don't return anything
   if (fs.existsSync(`${config.statusPageBasePath}/${gameName}_status`) === false)
   {
-    cb(`The statuspage could not be found. Could not fetch the turn or timer.`);
+    cb();
     return;
   }
 
