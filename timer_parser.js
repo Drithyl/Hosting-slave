@@ -7,7 +7,7 @@ module.exports.getTimer = function(gameName, cb)
 {
   if (fs.existsSync(`${config.statusPageBasePath}/${gameName}_status`) === false)
   {
-    cb(null, createTimer());
+    cb(`The statuspage could not be found. Could not fetch the turn or timer.`);
     return;
   }
 
@@ -121,7 +121,7 @@ function createTimer()
 {
   var obj =
   {
-    turn: 0,
+    turn: null,
     days: 0,
     hours: 0,
     minutes: 0,
