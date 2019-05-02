@@ -148,7 +148,7 @@ module.exports.freezeGames = function()
         return;
       }
 
-      if (timer.turn === 0)
+      if (timer == null || timer.turn == null || timer.turn === 0)
       {
         rw.log("general", `${game.name}'s has not started. No need to freeze.`);
         next();
