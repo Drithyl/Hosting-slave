@@ -175,14 +175,25 @@ module.exports.spawn = function(port, args, game, cb)
 
 function getAdditionalArgs(game)
 {
+  let args = [];
+
   switch(game.gameType.toLowerCase().trim())
   {
     case "dom4":
-    return ["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
+    if (process.platform === "win32")
+    {
+      args.push("--nocrashbox");
+    }
+
+    return args.concat(["--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)]);
     break;
 
     case "dom5":
-    return ["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)];
+    if (process.platform === "win32")
+    {
+      args.push("--nocrashbox");
+    }
+    return args.concat(["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)]);
     break;
 
     case "coe4":
