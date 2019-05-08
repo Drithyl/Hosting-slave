@@ -38,29 +38,23 @@ module.exports = function(port, cb)
     else if (cbWasCalled === false)
     {
       server.close();
-
-      //give a few seconds to close the server properly before the cb
-      setTimeout(() =>
-      {
-        cb(false);
-      }, msToCloseServer);
-
+      cb(true);
       cbWasCalled = true;
     }
   });
 
   server.on("listening", function(err)
   {
+    //server could listen on port so it's free, close server and wait
+    //for the close event to fire below to make sure port gets freed up
     server.close();
+  });
 
+  server.on("close", function(err)
+  {
     if (cbWasCalled === false)
     {
-      //give a few seconds to close the server properly before the cb
-      setTimeout(() =>
-      {
-        cb(false);
-      }, msToCloseServer);
-
+      cb(false);
       cbWasCalled = true;
     }
   });
