@@ -236,6 +236,14 @@ module.exports.downloadMap = function(fileId, gameType, cb)
           //select only the relevant files to extract
           if (mapDataExtensionRegexp.test(entry.fileName) === true)
           {
+            //.map files that begin with two underscores __ don't get found
+            //properly by the --mapfile flag, so make sure to remove them here
+            if (/^\_+/g.test(entry.fileName) === true)
+            {
+              rw.log("upload", `Map data file ${entry.fileName} contains underscores at the beginning of its name, removing them.`);
+              entry.fileName = entry.fileName.replace(/^\_+/g, "");
+            }
+
             rw.log("upload", `Keeping data file ${entry.fileName}.`);
             mapEntries.push(entry);
             mapDataFilenames.push(entry.fileName);
