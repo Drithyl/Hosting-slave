@@ -3,7 +3,7 @@ const fs = require("fs");
 const config = require("./config.json");
 const rw = require("./reader_writer.js");
 const timerParser = require("./timer_parser.js");
-const kill = require("./kill_instance.js").kill;
+const kill = require("./kill_instance.js");
 const spawn = require("./process_spawn.js").spawn;
 
 /************************************
@@ -148,7 +148,11 @@ module.exports.freezeGames = function()
         return;
       }
 
-      if (timer == null || timer.turn == null || timer.turn === 0)
+      //check not only timer but also ftherlnd file, as an undeleted statuspage file
+      //after a game was restarted could give unreliable timer values, and if the timer
+      //is changed on a game that's sitting in the lobby, it'll begin a countdown to start
+      if (timer == null || timer.turn == null || timer.turn === 0 ||
+          fs.existsSync(`${config.dom5DataPath}/savedgames/${game.name}/ftherlnd`) === false)
       {
         rw.log("general", `${game.name}'s has not started. No need to freeze.`);
         next();
