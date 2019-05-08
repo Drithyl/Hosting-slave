@@ -1,7 +1,7 @@
 
 const fs = require("fs");
 const spawn = require("./process_spawn.js").spawn;
-const kill = require("./kill_instance.js").kill;
+const kill = require("./kill_instance.js");
 const rw = require("./reader_writer.js");
 const config = require("./config.json");
 const provCountFn = require("./province_count_module.js");
