@@ -5,6 +5,7 @@ const config = require("./config.json");
 const rw = require("./reader_writer.js");
 const downloader = require("./file_downloader.js");
 const hoster = require("./hoster.js");
+const v2Converter = require("./v2_game_converter.js");
 
 //Interfaces for game operating and hosting
 var gameInterface = require("./game_interface.js");
@@ -447,11 +448,11 @@ socket.on("getSubmittedPretenders", function(data, serverCb)
 //Dom 5
 socket.on("removePretender", function(data, serverCb)
 {
-  var path = config.dom5DataPath + "savedgames/" + data.name + "/" + data.nationFile;
+  var path = `${config.dom5DataPath}savedgames/${data.name}/${data.nationFile}`;
 
   if (gameInterface.matchName(data.port, data.name) === false)
   {
-    serverCb("The game's name and port do not match.", null);
+    serverCb("The game's name and port do not match.");
     return;
   }
 
@@ -459,22 +460,12 @@ socket.on("removePretender", function(data, serverCb)
   {
     if (err)
     {
-      rw.logError({data: data}, `removePretender Error:`, err);
-      serverCb(err, null);
+      rw.log("error", {data: data, err: err});
+      serverCb(err);
       return;
     }
 
-    gameInterface.killGame(data.port, function(err)
-    {
-      if (err)
-      {
-        rw.logError({data: data}, `killGame Error:`, err);
-        serverCb(err, null);
-        return;
-      }
-
-      gameInterface.requestHosting(data.port, null, socket, serverCb);
-    });
+    serverCb();
   });
 });
 
@@ -482,4 +473,14 @@ socket.on("removePretender", function(data, serverCb)
 socket.on("getDump", function(data, serverCb)
 {
   gameInterface.getDump(data, serverCb);
+});
+
+socket.on("updateV2Game", function(data, serverCb)
+{
+  v2Converter.convert(data, serverCb);
+});
+
+socket.on("deleteV2Data", function(data, serverCb)
+{
+  v2Converter.deleteV2Data(data, serverCb);
 });

@@ -433,7 +433,7 @@ module.exports.changeDefaultTimer = function(data, cb)
 
 module.exports.getSubmittedPretenders = function(data, cb)
 {
-  if (typeof handlers[data.port].call.removePretender !== "function")
+  if (typeof handlers[data.port].call.getSubmittedPretenders !== "function")
   {
     cb("This game does not support the getSubmittedPretenders function.");
   }
