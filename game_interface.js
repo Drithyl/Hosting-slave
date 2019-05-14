@@ -51,12 +51,6 @@ module.exports.init = function(gamesInfo)
 
       //merge new information with the one we have (this should keep .frozenTimer and .instance properties)
       Object.assign(games[port], gamesInfo[port]);
-
-      if (games[port].name.toLowerCase() === "subtest")
-      {
-        console.log(games[port].frozenTimer);
-      }
-
     }
   }
 
@@ -165,8 +159,6 @@ module.exports.freezeGames = function()
 {
   Object.keys(games).forEachAsync(function(port, index, next)
   {
-    console.log("Checking game at port " + port);
-    console.log(games[port].name);
     let game = games[port];
 
     if (game == null)
@@ -204,7 +196,6 @@ module.exports.freezeGames = function()
 
       rw.log("general", `Freezing ${game.name}'s timer...`);
       game.frozenTimer = timerParser.getTotalSeconds(timer);
-      console.log(game.frozenTimer);
 
       //pause timer
       timer.isPaused = true;
@@ -406,8 +397,6 @@ module.exports.rollback = function(data, cb)
 module.exports.requestHosting = function(port, args, cb)
 {
   let game = games[port];
-    console.log("Checking game at port " + port);
-    console.log(games[port].name);
 
   if (game.instance != null && game.frozenTimer != null)
   {
