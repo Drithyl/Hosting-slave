@@ -30,14 +30,22 @@ require("./process_spawn").init(socket);
 socket.on("init", function(data, serverCb)
 {
   rw.log("general", "Received the init event from master server. Sending authentication attempt.");
-  serverCb({name: config.name, hostedGameNames: gameInterface.getGameNames(), capacity: config.capacity, token: config.token, ip: config.ip, ownerDiscordID: config.ownerDiscordID});
+  serverCb({name: config.name, capacity: config.capacity, token: config.token, ip: config.ip, ownerDiscordID: config.ownerDiscordID});
 });
 
 //Received when the master server validates the authentication,
 //at which point we can launch games.
-socket.on("validated", function(data, serverCb)
+socket.on("validated", function(gamesInfo, serverCb)
 {
   rw.log("general", "Authentication attempt validated by master server.");
+
+  if (typeof gamesInfo !== "object")
+  {
+    rw.log("error", `Did not receive any game data from master server:`, gamesInfo);
+    gameInterface.init({});
+  }
+
+  else gameInterface.init(gamesInfo);
 });
 
 
@@ -196,7 +204,7 @@ socket.on("create", function(data, serverCb)
     return;
   }
 
-  gameInterface.create(data.name, data.port, data.gameType, data.args, socket, serverCb);
+  gameInterface.create(data.name, data.port, data.gameType, data.args, serverCb);
 });
 
 socket.on("host", function(data, serverCb)
@@ -213,7 +221,7 @@ socket.on("host", function(data, serverCb)
     return;
   }
 
-  gameInterface.requestHosting(data.port, data.args, socket, serverCb);
+  gameInterface.requestHosting(data.port, data.args, serverCb);
 });
 
 socket.on("kill", function(data, serverCb)

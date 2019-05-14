@@ -6,34 +6,75 @@ const timerParser = require("./timer_parser.js");
 const kill = require("./kill_instance.js");
 const spawn = require("./process_spawn.js").spawn;
 
-/************************************
-*            GAME LIST              *
-* {name, port, gameType, instance}  *
-*     Indexed by port numbers       *
-************************************/
-//Create the file if it doesn't exist
-if (fs.existsSync(config.gameDataSavePath) === false)
-{
-  rw.log("general", `Game Data file not found; creating a new one: ${config.gameDataSavePath}`);
-  fs.writeFileSync(config.gameDataSavePath, "{}");
-}
-
-const games = require(config.gameDataSavePath);
+/************************************************************
+*                         GAME LIST                         *
+*             {name, port, gameType, instance}              *
+*     Indexed by port numbers, received from master server  *
+************************************************************/
+var games;
 
 //this will be used to set a delay between host requests
 var gameHostRequests = [];
-var dom4game = require("./dom4game.js").init(games);
-var coe4game = require("./coe4game.js").init(games);
-var dom5game = require("./dom5game.js").init(games);
+var dom4game;
+var coe4game;
+var dom5game;
 var handlers = {};
 
-//assign proper handlers to each game for when functions are called
-for (var port in games)
+module.exports.init = function(gamesInfo)
 {
-  assignHandler(games[port], port);
+  //this will happen when the slave server has been running after the master server
+  //goes down and reconnects
+  if (games != null)
+  {
+    for (var port in gamesInfo)
+    {
+      if (games[port] == null)
+      {
+        rw.log("error", `New data received on game ${gamesInfo[port].name} with port ${port} does not exist here.`);
+        games[port] = gameReceived;
+      }
+
+      if (gamesInfo[port].name !== games[port].name)
+      {
+        rw.log("error", `New data received with port ${port} and name ${gamesInfo[port].name} does not match the game ${games[port].name} with the same port.`);
+      }
+
+      if (gamesInfo[port].frozenTimer != null)
+      {
+        delete gamesInfo[port].frozenTimer;
+      }
+
+      if (gamesInfo[port].instance != null)
+      {
+        delete gamesInfo[port].instance;
+      }
+
+      //merge new information with the one we have (this should keep .frozenTimer and .instance properties)
+      Object.assign(games[port], gamesInfo[port]);
+
+      if (games[port].name.toLowerCase() === "subtest")
+      {
+        console.log(games[port].frozenTimer);
+      }
+
+    }
+  }
+
+  //first initialization
+  else games = gamesInfo;
+
+  dom4game = require("./dom4game.js").init(games);
+  coe4game = require("./coe4game.js").init(games);
+  dom5game = require("./dom5game.js").init(games);
+
+  //assign proper handlers to each game for when functions are called
+  for (var port in games)
+  {
+    assignHandler(games[port], port);
+  }
 }
 
-module.exports.create = function(name, port, gameType, args, socket, cb)
+module.exports.create = function(name, port, gameType, args, cb)
 {
   games[port] = {};
   games[port].port = port;
@@ -41,7 +82,7 @@ module.exports.create = function(name, port, gameType, args, socket, cb)
   games[port].args = args;
   games[port].gameType = gameType;
   assignHandler(games[port], port);
-  saveGames(cb);
+  cb();
 };
 
 module.exports.getGame = function(port)
@@ -124,6 +165,8 @@ module.exports.freezeGames = function()
 {
   Object.keys(games).forEachAsync(function(port, index, next)
   {
+    console.log("Checking game at port " + port);
+    console.log(games[port].name);
     let game = games[port];
 
     if (game == null)
@@ -160,8 +203,8 @@ module.exports.freezeGames = function()
       }
 
       rw.log("general", `Freezing ${game.name}'s timer...`);
-
       game.frozenTimer = timerParser.getTotalSeconds(timer);
+      console.log(game.frozenTimer);
 
       //pause timer
       timer.isPaused = true;
@@ -360,9 +403,11 @@ module.exports.rollback = function(data, cb)
   else handlers[data.port].call.rollback(data, cb);
 };
 
-module.exports.requestHosting = function(port, args, socket, cb)
+module.exports.requestHosting = function(port, args, cb)
 {
   let game = games[port];
+    console.log("Checking game at port " + port);
+    console.log(games[port].name);
 
   if (game.instance != null && game.frozenTimer != null)
   {
@@ -524,7 +569,6 @@ module.exports.deleteGameData = function(data, cb)
 
     delete games[data.port];
     delete handlers[data.port];
-    saveGames(cb);
   });
 };
 
@@ -532,46 +576,6 @@ module.exports.saveSettings = function(data, cb)
 {
   let game = games[data.port];
   game.args = data.args;
-  saveGames(cb);
-}
-
-function saveGames(cb)
-{
-  var data = gamesToJSON();
-
-  rw.log("general", "Saving games' data:");
-  fs.writeFile(config.gameDataSavePath, data, function(err)
-  {
-    if (err)
-    {
-      rw.logError({games: data}, `fs.writeFile Error:`, err);
-      cb(`An error occurred when trying to save the game data:\n\n${err}`, null);
-      return;
-    }
-
-    cb(null);
-    rw.log("general", "Data saved.");
-  });
-};
-
-function gamesToJSON(spacing = 2)
-{
-  var clonedGames = {};
-
-  for (var port in games)
-  {
-    clonedGames[port] = {};
-
-    for (var key in games[port])
-    {
-      if (key.toLowerCase() !== "instance")
-      {
-        clonedGames[port][key] = games[port][key];
-      }
-    }
-  }
-
-  return JSON.stringify(clonedGames, null, 2);
 }
 
 //assigns the proper host class for the gameType, for all future function

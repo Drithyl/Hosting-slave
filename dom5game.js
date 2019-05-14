@@ -16,12 +16,12 @@ module.exports.init = function(gameList)
 
 module.exports.getModList = function(cb)
 {
-  rw.getDirFilenames(config.dom5DataPath + "/mods", ".dm", cb);
+  rw.getDirFilenames(`${config.dom5DataPath}/mods`, ".dm", cb);
 };
 
 module.exports.getMapList = function(cb)
 {
-  rw.readDirContent(config.dom5DataPath + "/maps", ".map", function(err, data)
+  rw.readDirContent(`${config.dom5DataPath}/maps`, ".map", function(err, data)
   {
     if (err)
     {
@@ -378,6 +378,7 @@ module.exports.getStales = function(data, cb)
 
 module.exports.getDump = function(data, cb)
 {
+  //var dump = parseDump(games[data.port].name);
   var dump = parseDump(games[data.port].name);
 
   if (dump == null)
