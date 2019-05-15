@@ -558,6 +558,7 @@ module.exports.deleteGameData = function(data, cb)
 
     delete games[data.port];
     delete handlers[data.port];
+    cb();
   });
 };
 
