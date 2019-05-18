@@ -52,6 +52,15 @@ module.exports.init = function(gamesInfo)
       //merge new information with the one we have (this should keep .frozenTimer and .instance properties)
       Object.assign(games[port], gamesInfo[port]);
     }
+
+    //check for games that exist in memory here but not on the master server and delete those
+    for (var port in games)
+    {
+      if (gamesInfo[port] == null)
+      {
+        deleteGameReferences(port);
+      }
+    }
   }
 
   //first initialization
@@ -164,7 +173,7 @@ module.exports.freezeGames = function()
     if (game == null)
     {
       rw.log("general", `Port key ${port} contains a null game.`);
-      delete games[port];
+      deleteGameReferences(port);
       next();
     }
 
@@ -250,7 +259,7 @@ module.exports.shutDownGames = function(cb)
     if (game == null)
     {
       rw.log("general", `Port key ${port} contains a null game.`);
-      delete games[port];
+      deleteGameReferences(port);
       next();
     }
 
@@ -552,7 +561,7 @@ module.exports.deleteGameData = function(data, cb)
   {
     if (err)
     {
-      cb(err, null);
+      cb(err);
       return;
     }
 
@@ -590,4 +599,10 @@ function assignHandler(game, port)
     rw.logError({name: game.name, gameType: game.gameType}, `Incorrect game type, cannot assign a handler.`);
     throw `The game ${game.name} has an incorrect game type, cannot assign a handler: ${game.gameType}.`;
   }
+}
+
+function deleteGameReferences(port)
+{
+  delete games[port];
+  delete handlers[port];
 }
