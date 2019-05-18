@@ -58,6 +58,7 @@ module.exports.init = function(gamesInfo)
     {
       if (gamesInfo[port] == null)
       {
+        rw.log("error", `A game in memory does not appear to exist in the master server:`, games[port]);
         deleteGameReferences(port);
       }
     }
