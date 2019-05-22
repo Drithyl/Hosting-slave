@@ -184,11 +184,11 @@ module.exports.freezeGames = function()
       next();
     }
 
-    timerParser.getTimer(game.name, function(err, timer)
+    timerParser.getTurnInfo(game.name, function(err, timer)
     {
       if (err)
       {
-        rw.log("error", `${game.name}'s timer could not be parsed, cannot freeze.`);
+        rw.log("error", `${game.name}'s timer could not be parsed, cannot freeze:\n\n${err.message}`);
         next();
         return;
       }
@@ -509,12 +509,18 @@ module.exports.getTurnInfo = function(data, cb)
 {
   var game = games[data.port];
 
-  timerParser.getTimer(game.name, function(err, timer)
+  timerParser.getTurnInfo(game.name, function(err, timer)
   {
     if (err)
     {
-      rw.log("error", `An error occurred when getting ${game.name}'s timer info: `, err);
-      cb(`An error occurred when getting ${game.name}'s timer info.`);
+      //if the statuspage was not found, don't log this error, just pass it as is
+      if (err.code === "ENOENT")
+      {
+        return cb(err);
+      }
+
+      rw.log("error", `An error occurred when getting ${game.name}'s turn info: `, err);
+      cb(`An error occurred when parsing ${game.name}'s turn info:\n\n${err.message}`);
       return;
     }
 

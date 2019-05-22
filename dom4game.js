@@ -80,42 +80,66 @@ module.exports.restart = function(data, cb)
   var game = games[data.port];
   var path = `${config.dom4DataPath}/savedgames/${game.name}`;
 
-  rw.deleteDirContents(path, ["", ".2h", ".trn"], function(err)
+  rw.log("general", `Killing ${game.name}'s process...`);
+
+  //kill game first so it doesn't automatically regenerate the statuspage file
+  //as soon as it gets deleted
+  kill(game, function(err)
   {
     if (err)
     {
-      cb(err);
-      return;
+      return cb(`The game's process could not be killed to do the necessary changes to restart it.`);
     }
 
-    kill(game, function(err)
+    rw.log("general", `Checking for existing ${game.name}'s statuspage file...`);
+
+    //if statuspage exists, it *must* be deleted, or else every timer check done before
+    //the game starts again will return unreliable values which could have undesirable
+    //side-effects (like if the bot goes down, it will freeze the game's timer and
+    //then restore it later, causing an unrequested countdown to start, because the
+    //old statuspage made it seem like the game was started)
+    if (fs.existsSync(`${config.statusPageBasePath}/${game.name}_status`) === true)
+    {
+      try
+      {
+        fs.unlinkSync(`${config.statusPageBasePath}/${game.name}_status`);
+        rw.log("general", `${game.name}'s statuspage file has been deleted.`);
+      }
+
+      catch(err)
+      {
+        rw.log("error", `${game.name}'s statuspage file could not be deleted:\n\n${err.message}`);
+        return cb(`Dominions' statuspage could not be deleted. The game was not restarted but its process was shut down.`);
+      }
+    }
+
+    rw.log("general", `Starting the atomic removal of savedgame files...`);
+
+    //must delete statusdump.txt as well, otherwise when players type
+    //!pretenders, it will read the old statusdump file and show existing
+    //pretenders that have been deleted. atomicRmDir guarantees that either
+    //all the necessary files get deleted or none of them does, thus
+    //preserving the integrity of the savedgames folder. The "" in the filter
+    //is necessary as the fthrlnd file that contains the main data has no extension
+    rw.atomicRmDir(path, ["", ".2h", ".trn", ".txt"], function(err)
     {
       if (err)
       {
-        cb(`The data was restarted, but the game's process could not be killed to reboot it. Try to use the kill command to do so manually.`);
-        return;
+        rw.log("error", `Failed to remove savedgame files:\n\n${err.message}`);
+        return cb(`Error when deleting save files. The game has not been restarted and is simply shut down. You can relaunch its process normally. Below is the error message:\n\n${err.message}`);
       }
 
-      //ignore this because the statuspage file deletion is not critical;
-      //even if it remains it will be overwritten
-      /*fs.unlink(`${config.statusPageBasePath}/${game.name}_status`, function(err)
+      rw.log("general", `Removed files successfully. Spawning game's process...`);
+
+      spawn(game.port, game.args, game, function(err)
       {
         if (err)
         {
-          cb(`The data was restarted, but the old statuspage file could not be deleted. Try to reboot the game by using the kill and launch commands to do so manually.`);
-          return;
-        }*/
+          cb(`The data was restarted, but the game's process could not be launched after killing it. Try to use the launch command to do so manually.`);
+        }
 
-        spawn(game.port, game.args, game, function(err)
-        {
-          if (err)
-          {
-            cb(`The data was restarted, but the game's process could not be launched after killing it. Try to use the launch command to do so manually.`);
-          }
-
-          else cb(null);
-        });
-      //});
+        else cb();
+      });
     });
   });
 };

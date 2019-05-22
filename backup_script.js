@@ -2,6 +2,7 @@ require("./prototype_functions.js");
 const fs = require("fs");
 const config = require("./config.json");
 const rw = require("./reader_writer.js");
+const timerParser = require("./timer_parser.js");
 const preexecRegex = new RegExp("^\\-\\-preexec$", "i");
 const postexecRegex = new RegExp("^\\-\\-postexec$", "i");
 
@@ -34,27 +35,11 @@ else
   return;
 }
 
-fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, content) =>
+timerParser.getTurnInfo(gameName, function(err, timer)
 {
   if (err)
   {
-    rw.log(["error", "backup"], true, `Error occurred while reading file ${config.statusPageBasePath}/${gameName}_status:`, err);
-    return;
-  }
-
-  content = content.match(/turn \d+/i);
-
-  if (content[0] == null)
-  {
-    rw.log(["error", "backup"], true, `Content matched is incorrect: ${content}`);
-    return;
-  }
-
-  turn = content[0].replace(/\D+/gi, "");
-
-  if (isNaN(+turn) === true)
-  {
-    rw.log(["error", "backup"], true, `Turn parsed is incorrect: ${turn}`);
+    rw.log(["error", "backup"], true, `Error occurred while parsing timer:\n\n${err.message}`);
     return;
   }
 
@@ -62,10 +47,10 @@ fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, con
   //the turn processes, therefore add 1 to it
   if (postexecRegex.test(type) === true)
   {
-    turn++;
+    timer.turn++;
   }
 
-  target += `Turn ${turn}`;
+  target += `Turn ${timer.turn}`;
 
   rw.copyDir(source, target, false, ["", ".2h", ".trn"], function(err)
   {

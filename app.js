@@ -48,6 +48,8 @@ socket.on("validated", function(gamesInfo, serverCb)
   else gameInterface.init(gamesInfo);
 });
 
+rw.log("general", "Set up listeners for master server's 'init' event.");
+
 
 /******************************
 *   DISCONNECTION HANDLING    *

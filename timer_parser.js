@@ -3,21 +3,25 @@ const fs = require("fs");
 const config = require("./config.json");
 const rw = require("./reader_writer.js");
 
-module.exports.getTimer = function(gameName, cb)
+module.exports.getTurnInfo = function(gameName, cb)
 {
-  //probably not started so don't return anything
+  //either game has not started or something unexpectedly deleted the statuspage
+  //file while the game is ongoing, for instance, a failed restart. The file might
+  //not get regenerated in time when Dominions is running before a timer check
+  //gets done so this would be an error
   if (fs.existsSync(`${config.statusPageBasePath}/${gameName}_status`) === false)
   {
-    cb();
-    return;
+    let err = new Error(`statuspage does not exist.`);
+    err.code = "ENOENT";  //"Error No Entry", standard for when a path doesn't exist
+    return cb(err);
   }
 
   fs.readFile(`${config.statusPageBasePath}/${gameName}_status`, "utf8", (err, content) =>
   {
     if (err)
     {
-      rw.log(["error"], true, `Error occurred while reading file ${config.statusPageBasePath}/${gameName}_status:`, err);
-      cb(`There was an Error reading the statuspage.`);
+      rw.log("error", true, `Error occurred while reading file ${config.statusPageBasePath}/${gameName}_status:`, err);
+      cb(new Error(`There was an Error reading the statuspage:\n\n${err.message}`));
     }
 
     else cb(null, parse(content));
@@ -103,6 +107,7 @@ function parse(data)
 
   else timer.seconds = 0;
 
+  //include the totalHours, totalMinutes and totalSeconds calculations for convenience
   timer.totalHours = getTotalHours(timer);
   timer.totalMinutes = getTotalMinutes(timer);
   timer.totalSeconds = module.exports.getTotalSeconds(timer);
