@@ -23,8 +23,8 @@ const modSoundExtensionRegexp = new RegExp("\.sw$", "i");
 //The temporary path in which zips are piped to, then deleted once extracted
 const tmpPath = `tmp`;
 
-const mapZipMaxSize = 100000000;  //100MB in bytes
-const modZipMaxSize = 10000000;   //10MB in bytes
+const mapZipMaxSize = config.maxMapSizeInMB * 1000000;  //100MB in bytes
+const modZipMaxSize = config.maxModSizeInMB * 1000000;  //10MB in bytes
 
 if (fs.existsSync(tmpPath) === false)
 {

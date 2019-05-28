@@ -1,37 +1,41 @@
 {
-  "ownerDiscordID": "212328740233936896",
-  "name": "testSlave",
-  "ip": "89.38.150.76",
-  "masterIP": "localhost",
+  "ownerDiscordID": "",
+  "name": "",
+  "ip": "",
+  "masterIP": "",
   "masterPort": 3000,
   "gamePortRange":
   {
     "first": 6000,
     "last": 10000
   },
-  "token": "test",
+
+  "maxMapSizeInMB": 100,
+  "maxModSizeInMB": 15,
+
+  "token": "",
   "capacity": 20,
 
-  "tmpDir": "C:/Bot/tmp",
-  "generalLogPath": "C:/Bot/log.txt",
-  "uploadLogPath": "C:/Bot/uploadLog.txt",
-  "backupLogPath": "C:/Bot/backupLog.txt",
-  "errorLogPath": "C:/Bot/errorLog.txt",
-  "statusPageBasePath": "C:/Bot/statuspages",
+  "tmpDir": "",
+  "generalLogPath": "",
+  "uploadLogPath": "",
+  "backupLogPath": "",
+  "errorLogPath": "",
+  "statusPageBasePath": "",
 
-  "dom4RootPath": "H:/Steam/steamapps/common/Dominions4",
-  "dom4ExePath": "H:/Steam/steamapps/common/Dominions4/Dominions4.exe",
-  "dom4DataPath": "C:/Users/MistZ/AppData/Roaming/Dominions4",
+  "dom4RootPath": "",
+  "dom4ExePath": "",
+  "dom4DataPath": "",
 
-  "dom5RootPath": "H:/Steam/steamapps/common/Dominions5",
-  "dom5ExePath": "H:/Steam/steamapps/common/Dominions5/Dominions5.exe",
-  "dom5DataPath": "C:/Users/MistZ/AppData/Roaming/Dominions5",
+  "dom5RootPath": "",
+  "dom5ExePath": "",
+  "dom5DataPath": "",
 
-  "coe4RootPath": "H:/Steam/steamapps/common/ConquestOfElysium4",
-  "coe4RootPath": "H:/Steam/steamapps/common/ConquestOfElysium4/coe4.exe",
-  "coe4DataPath": "C:/Users/MistZ/AppData/Roaming/coe4",
+  "coe4RootPath": "",
+  "coe4RootPath": "",
+  "coe4DataPath": "",
 
-  "pathToGameSaveBackup": "H:/Bot/Backups/savedgames",
+  "pathToGameSaveBackup": "",
 
   "newTurnsBackupDirName": "New Turns",
   "latestTurnBackupDirName": "Latest",
