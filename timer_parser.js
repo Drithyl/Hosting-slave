@@ -28,6 +28,33 @@ module.exports.getTurnInfo = function(gameName, cb)
   });
 };
 
+module.exports.getTurnInfoSync = function(gameName, cb)
+{
+  let statusInfo;
+
+  //either game has not started or something unexpectedly deleted the statuspage
+  //file while the game is ongoing, for instance, a failed restart. The file might
+  //not get regenerated in time when Dominions is running before a timer check
+  //gets done so this would be an error
+  if (fs.existsSync(`${config.statusPageBasePath}/${gameName}_status`) === false)
+  {
+    return null;
+  }
+
+  try
+  {
+    statusInfo = fs.readFileSync(`${config.statusPageBasePath}/${gameName}_status`, "utf8")
+  }
+
+  catch(err)
+  {
+    rw.log("error", true, `Error occurred while reading file ${config.statusPageBasePath}/${gameName}_status:`, err);
+    throw new Error(`There was an Error reading the statuspage:\n\n${err.message}`);
+  }
+
+  return parse(statusInfo);
+};
+
 function parse(data)
 {
   var timer = createTimer();

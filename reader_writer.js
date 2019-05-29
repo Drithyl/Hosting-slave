@@ -97,10 +97,12 @@ module.exports.copyDir = function(source, target, deepCopy, extensionFilter, cb)
 								 (Array.isArray(extensionFilter) === true && extensionFilter.includes(file.slice(file.lastIndexOf(".")).toLowerCase()) === true) ||
 								 (Array.isArray(extensionFilter) === true && extensionFilter.includes("") === true) && file.includes(".") === false)
 				{
+					console.log(`copying file ${source}/${file} to ${target}/${file}`);
 					module.exports.copyFile(`${source}/${file}`, `${target}/${file}`, function(err)
 					{
 						if (err)
 						{
+							console.log('error copying it');
 							if (typeof cb === "function") return cb(err);
 							else return reject(err);
 						}

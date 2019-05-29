@@ -202,7 +202,7 @@ function getAdditionalArgs(game)
     {
       args.push("--nocrashbox");
     }
-    return args.concat(["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, ...backupCmd("--preexec", game.name), ...backupCmd("--postexec", game.name)]);
+    return args.concat(["--nosteam", "--statuspage", `${config.statusPageBasePath}/${game.name}_status`, /*...backupCmd("--preexec", game.name),*/ ...backupCmd("--postexec", game.name)]);
     break;
 
     case "coe4":
@@ -246,5 +246,8 @@ function backupCmd(type, gameName)
     return [];
   }
 
+  //pass the dom5 flag (--preexec or --postexec) plus the cmd command to launch
+  //the node script, "node [path to backup_script.js]" plus the game's name and
+  //type as arguments to the script
   else return [type, `node "${backupModulePath}" ${gameName} ${type}`];
 }

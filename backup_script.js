@@ -11,6 +11,7 @@ var type = process.argv[3];
 var source = `${config.dom5DataPath}/savedgames/${gameName}`;
 var target = `${config.pathToGameSaveBackup}/`;
 var turn;
+var turnInfo;
 
 rw.log(["backup"], `Backup type ${type} for ${gameName} starting.`);
 
@@ -35,30 +36,49 @@ else
   return;
 }
 
-timerParser.getTurnInfo(gameName, function(err, timer)
+try
 {
-  if (err)
+  turnInfo = timerParser.getTurnInfoSync(gameName);
+}
+
+catch(err)
+{
+  rw.log(["error", "backup"], true, `Statuspage reading Error:\n\n${err.message}`);
+  return;
+}
+
+if (turnInfo == null)
+{
+  rw.log(["error", "backup"], true, `Statuspage could not be found, cannot archive turn.`);
+  return;
+}
+
+//statuspages don't update fast enough to give the new turn number right after
+//the turn processes, therefore add 1 to it
+if (postexecRegex.test(type) === true)
+{
+  turnInfo.turn++;
+}
+
+target += `Turn ${turnInfo.turn}`;
+
+if (fs.existsSync(target) === false)
+{
+  fs.mkdirSync(target);
+}
+
+try
+{
+  let filenames = fs.readdirSync(source);
+
+  filenames.forEach((filename) =>
   {
-    rw.log(["error", "backup"], true, `Error occurred while parsing timer:\n\n${err.message}`);
-    return;
-  }
-
-  //statuspages don't update fast enough to give the new turn number right after
-  //the turn processes, therefore add 1 to it
-  if (postexecRegex.test(type) === true)
-  {
-    timer.turn++;
-  }
-
-  target += `Turn ${timer.turn}`;
-
-  rw.copyDir(source, target, false, ["", ".2h", ".trn"], function(err)
-  {
-    if (err)
-    {
-      rw.log(["error", "backup"], true, `Error occurred while copying dir ${source} to ${target}.`);
-    }
-
-    rw.log("backup", `${gameName}'s ${type} Turn ${turn} backed up successfully.`);
+    let data = fs.readFileSync(`${source}/${filename}`);
+    fs.writeFileSync(`${target}/${filename}`, data);
   });
-});
+}
+
+catch(err)
+{
+  rw.log(["error", "backup"], `FS Error: ${err.message}`);
+}
