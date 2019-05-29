@@ -62,9 +62,15 @@ if (postexecRegex.test(type) === true)
 
 target += `Turn ${turnInfo.turn}`;
 
-if (fs.existsSync(target) === false)
+try
 {
-  fs.mkdirSync(target);
+  createDirsSync(target);
+}
+
+catch(err)
+{
+  rw.log(["error", "backup"], true, `Dirs could not be created for backups:\n\n${err.message}`);
+  return;
 }
 
 try
@@ -81,4 +87,36 @@ try
 catch(err)
 {
   rw.log(["error", "backup"], `FS Error: ${err.message}`);
+}
+
+function createDirsSync(target)
+{
+  //Linux base paths begin with / so ignore the first empty element
+  if (target.indexOf("/") === 0)
+  {
+    target = target.slice(1);
+  }
+
+  let dirs = target.split("/");
+  let currentPath = dirs.shift();
+
+  if (process.platform === "linux")
+  {
+    currentPath = `/${currentPath}`;
+  }
+
+  if (fs.existsSync(currentPath) === false)
+  {
+    throw new Error(`The base path ${currentPath} specified for the backup target does not exist.`);
+  }
+
+  dirs.forEach((dir) =>
+  {
+    currentPath += `/${dir}`;
+
+    if (fs.existsSync(currentPath) === false)
+    {
+      fs.mkdirSync(currentPath);
+    }
+  });
 }
