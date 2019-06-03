@@ -32,23 +32,12 @@ if (fs.existsSync(tmpPath) === false)
   fs.mkdirSync(tmpPath);
 }
 
-module.exports.downloadMod = function(fileId, gameType, cb)
+module.exports.downloadMod = function(fileId, gameType, serverCb)
 {
   let modEntries = [];
   let modDataFilenames = [];
-
-  //configure the final execution of the callback to delete any tmp files.
-  //done this way so we don't have to add deleteTmpFile() to every step of the
-  //callback chain below
-  let extendedCb = function()
-  {
-    let args = arguments;
-    rw.log("upload", `Deleting temp zipfile ${fileId}...`);
-    deleteTmpFile(fileId, function(err)
-    {
-      cb.apply(this, args);  //apply the arguments that the cb got called with originally
-    });
-  };
+  let percentageCompleted = 0;
+  let lastChunkSizeUpdate = 0;
 
   rw.log("upload", `Obtaining metadata of ${gameType} mod file id ${fileId}...`);
 
@@ -57,8 +46,7 @@ module.exports.downloadMod = function(fileId, gameType, cb)
   {
     if (err)
     {
-      extendedCb(err);
-      return;
+      return serverCb({err: err.message});
     }
 
     rw.log("upload", `Metadata of ${gameType} mod file id ${fileId} obtained:\n`, metadata);
@@ -67,16 +55,14 @@ module.exports.downloadMod = function(fileId, gameType, cb)
     if (metadata.fileExtension !== "zip")
     {
       rw.log("upload", `Mod file id ${fileId} is not a zipfile.`);
-      extendedCb("Only .zip files are supported. Please send the file id of a .zip file so it can be unzipped into the proper directory.");
-      return;
+      return serverCb({err: "Only .zip files are supported. Please send the file id of a .zip file so it can be unzipped into the proper directory."});
     }
 
     //won't support mod zips of over 25MB (metadata size is in bytes)
     if (metadata.size > modZipMaxSize)
     {
       rw.log("upload", `Mod file id ${fileId} has a size of ${metadata.size}, which is beyond the limit of ${modZipMaxSize}.`);
-      extendedCb(`For bandwith reasons, your file cannot be over ${modZipMaxSize * 0.000001}MB in size. Please choose a smaller file.`);
-      return;
+      return serverCb({err: `For bandwith reasons, your file cannot be over ${modZipMaxSize * 0.000001}MB in size. Please choose a smaller file.`});
     }
 
     rw.log("upload", `Downloading and fetching ${gameType} mod zipfile ${fileId}...`);
@@ -86,8 +72,8 @@ module.exports.downloadMod = function(fileId, gameType, cb)
     {
       if (err)
       {
-        extendedCb(err);
-        return;
+        deleteTmpFile(fileId);
+        return serverCb({err: err.message});
       }
 
       rw.log("upload", `Fetching entries of ${gameType} mod zipfile ${fileId}...`);
@@ -98,8 +84,8 @@ module.exports.downloadMod = function(fileId, gameType, cb)
         if (err)
         {
           rw.log("upload", `Failed to get the entries of ${gameType} mod zipfile ${fileId}:\n`, err);
-          extendedCb(err);
-          return;
+          deleteTmpFile(fileId);
+          return serverCb({err: err.message});
         }
 
         rw.log("upload", `Filtering entries by extension...`);
@@ -140,42 +126,34 @@ module.exports.downloadMod = function(fileId, gameType, cb)
         rw.log("upload", `Writing mod entries to disk...`);
 
         //write the file data from all entries obtained from the zipfile
-        writeModFiles(zipfile, modEntries, gameType, function(err, failedFileErrors)
+        writeModFiles(zipfile, modEntries, gameType, function(err, failedFileErrors, modFilesWritten)
         {
           if (err)
           {
-            rw.log("upload", `Failed to write mod entries to disk:\n`, err);
-            extendedCb(err, failedFileErrors, modDataFilenames);
-            return;
+            rw.log("upload", `Failed to write mod entries to disk:\n\n${err.message}`);
+            deleteTmpFile(fileId);
+            return serverCb({failedFileErrors: failedFileErrors, modFilesWritten: modFilesWritten, err: err.message});
           }
 
           rw.log("upload", `Entries written successfully.`);
-          extendedCb(null, failedFileErrors, modDataFilenames);
+          deleteTmpFile(fileId);
+          return serverCb({isDone: true, failedFileErrors: failedFileErrors, modFilesWritten: modFilesWritten});
         });
       });
-    });
+
+    //provide an update callback to getZipfile to receive updates of chunks downloaded
+    }, updatePercentage(metadata.size, serverCb));
   });
 };
 
 //download a map zip pack through a google drive file ID (the google drive file
 //ID can be obtained by getting a shareable link on the file: https://drive.google.com/open?id=THIS_IS_THE_FILE_ID)
-module.exports.downloadMap = function(fileId, gameType, cb)
+module.exports.downloadMap = function(fileId, gameType, serverCb)
 {
   let mapEntries = [];
   let mapDataFilenames = [];
-
-  //configure the final execution of the callback to delete any tmp files.
-  //done this way so we don't have to add deleteTmpFile() to every step of the
-  //callback chain below
-  let extendedCb = function()
-  {
-    let args = arguments;
-    rw.log("upload", `Deleting temp zipfile ${fileId}...`);
-    deleteTmpFile(fileId, function(err)
-    {
-      cb.apply(this, args);  //apply the arguments that the cb got called with originally
-    });
-  };
+  let percentageCompleted = 0;
+  let lastChunkSizeUpdate = 0;
 
   rw.log("upload", `Obtaining metadata of ${gameType} map file id ${fileId}...`);
 
@@ -184,8 +162,7 @@ module.exports.downloadMap = function(fileId, gameType, cb)
   {
     if (err)
     {
-      extendedCb(err);
-      return;
+      return serverCb({err: err.message});
     }
 
     rw.log("upload", `Metadata of ${gameType} map file id ${fileId} obtained:\n`, metadata);
@@ -194,16 +171,14 @@ module.exports.downloadMap = function(fileId, gameType, cb)
     if (metadata.fileExtension !== "zip")
     {
       rw.log("upload", `Map file id ${fileId} is not a zipfile.`);
-      extendedCb("Only .zip files are supported. Please send the file id of a .zip file so it can be unzipped into the proper directory.");
-      return;
+      return serverCb({err: "Only .zip files are supported. Please send the file id of a .zip file so it can be unzipped into the proper directory."});
     }
 
     //won't support map zips of over 100MB (metadata size is in bytes)
     if (metadata.size > mapZipMaxSize)
     {
       rw.log("upload", `Map file id ${fileId} has a size of ${metadata.size}, which is beyond the limit of ${mapZipMaxSize}.`);
-      extendedCb(`For bandwith reasons, your file cannot be over ${mapZipMaxSize * 0.000001}MB in size. Please choose a smaller file.`);
-      return;
+      return serverCb({err: `For bandwith reasons, your file cannot be over ${mapZipMaxSize * 0.000001}MB in size. Please choose a smaller file.`});
     }
 
     rw.log("upload", `Downloading and fetching ${gameType} map zipfile ${fileId}...`);
@@ -213,8 +188,8 @@ module.exports.downloadMap = function(fileId, gameType, cb)
     {
       if (err)
       {
-        extendedCb(err);
-        return;
+        deleteTmpFile(fileId);
+        return serverCb({err: err.message});
       }
 
       rw.log("upload", `Fetching entries of ${gameType} map zipfile ${fileId}...`);
@@ -225,8 +200,8 @@ module.exports.downloadMap = function(fileId, gameType, cb)
         if (err)
         {
           rw.log("upload", `Failed to get the entries of ${gameType} map zipfile ${fileId}:\n`, err);
-          extendedCb(err);
-          return;
+          deleteTmpFile(fileId);
+          return serverCb({err: err.message});
         }
 
         rw.log("upload", `Filtering entries by extension...`);
@@ -265,16 +240,19 @@ module.exports.downloadMap = function(fileId, gameType, cb)
         {
           if (err)
           {
-            rw.log("upload", `Failed to write map entries to disk:\n`, err);
-            extendedCb(err);
-            return;
+            rw.log("upload", `Failed to write map entries to disk:\n\n${err.message}`);
+            deleteTmpFile(fileId);
+            return serverCb({failedFileErrors: failedFileErrors, err: err.message});
           }
 
           rw.log("upload", `Entries written successfully`);
-          extendedCb(null, failedFileErrors, mapDataFilenames);
+          deleteTmpFile(fileId);
+          return serverCb({isDone: true, failedFileErrors: failedFileErrors});
         });
       });
-    });
+
+    //provide an update callback to getZipfile to receive updates of chunks downloaded
+    }, updatePercentage(metadata.size, serverCb));
   });
 };
 
@@ -285,47 +263,100 @@ function getMetadata(fileId, cb)
     if (err)
     {
       rw.log("upload", `Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
-      cb(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`);
+      cb(new Error(`Failed to get metadata of file id ${fileId}. Response status is ${err.status} (${err.statusText}).`));
     }
 
     else if (metadata == null)
     {
       rw.log("upload", `Metadata of file id ${fileId} is invalid (${metadata}).`);
-      cb(`Metadata of file id ${fileId} is invalid or this file has no metadata. Perhaps you're not linking a .zip file?`);
+      cb(new Error(`Metadata of file id ${fileId} is invalid or this file has no metadata. Perhaps you're not linking a .zip file?`));
     }
 
     else cb(null, metadata);
   });
 }
 
-function getZipfile(fileId, cb)
+function getZipfile(fileId, cb, updateCb)
 {
   let path = `${tmpPath}/${fileId}.zip`;
 
-  googleDriveAPI.downloadFile(fileId, path, function(err)
+  googleDriveAPI.downloadFile(fileId, path, function(err, isDone, chunkByteSize)
   {
     if (err)
     {
-      console.log(`DEBUG: getting zipfile error`, err);
-      rw.log("upload", `Failed to download file id ${fileId} from google drive. Response status is ${err.status} (${err.statusText}).`);
-      cb(`Failed to download file id ${fileId} from google drive. Response status is ${err.status} (${err.statusText}).`);
-      return;
-    }
-
-    rw.log("upload", `File ${fileId}.zip downloaded.`);
-
-    yauzl.open(path, {lazyEntries: true, autoClose: false}, function(err, zipfile)
-    {
-      if (err)
+      //this is a google drive get error
+      if (err.status != null)
       {
-        console.log(`DEBUG: yauzl open error`, err);
-        cb(err);
-        return;
+        rw.log("upload", `Failed to download file id ${fileId} from google drive. Google Drive's response status is ${err.status} (${err.statusText}).`);
+        return cb(new Error(`Failed to download file id ${fileId} from google drive. Google Drive's response status is ${err.status} (${err.statusText}).`));
       }
 
-      cb(null, zipfile);
-    });
+      //this is a nodejs stream error
+      else
+      {
+        rw.log("upload", `Failed to write downloaded file with id ${fileId} to disk. ${err.code}:\n\n${err.message}`);
+        return cb(new Error(`Failed to write downloaded file with id ${fileId} to disk. ${err.code}:\n\n${err.message}`));
+      }
+    }
+
+    //cb finished
+    else if (isDone === true)
+    {
+      rw.log("upload", `File ${fileId}.zip downloaded. Using yauzl to open it...`);
+
+      yauzl.open(path, {lazyEntries: true, autoClose: false}, function(err, zipfile)
+      {
+        if (err)
+        {
+          cb(err);
+          return;
+        }
+
+        cb(null, zipfile);
+      });
+    }
+
+    //received new chunk size in the read stream so update
+    else if (typeof updateCb === "function")
+    {
+      updateCb(chunkByteSize)
+    }
   });
+}
+
+//closure returning an update callback for the getZipfile() function
+//if updateCb is provided it will call it whenever a new percentage
+//integer is completed to update the client of the progress
+function updatePercentage(fileSize, updateServerCb)
+{
+  let percentageCompleted = 0;
+  let lastChunkSizeUpdate = 0;
+
+  if (typeof updateServerCb === "function")
+  {
+    rw.log("upload", `updateCb provided to updatePercentage(); will send back download percentage updates to client.`);
+  }
+
+  return function(chunkByteSize)
+  {
+    //update the percentage completed with the previously received chunk,
+    //since it is now downloaded, and update the size value for the next one
+    let newPercentageCompleted = percentageCompleted + (lastChunkSizeUpdate / fileSize) * 100;
+
+    if (Math.floor(newPercentageCompleted) > Math.floor(percentageCompleted))
+    {
+      rw.log("upload", `${Math.floor(newPercentageCompleted)}% completed.`);
+
+      if (typeof updateServerCb === "function")
+      {
+        //never send an error in this callback
+        updateServerCb({progress: Math.floor(newPercentageCompleted)});
+      }
+    }
+
+    percentageCompleted = newPercentageCompleted;
+    lastChunkSizeUpdate = chunkByteSize;
+  }
 }
 
 function getZipEntries(zipfile, cb)
@@ -337,7 +368,7 @@ function getZipEntries(zipfile, cb)
 
   zipfile.on("error", function(err)
   {
-    console.log(`DEBUG: readEntry error`, err);
+    rw.log("upload", `readEntry() error`, err);
     cb(err);
   });
 
@@ -373,7 +404,7 @@ function writeMapFiles(zipfile, entries, gameType, cb)
   if (errors.length > 0)
   {
     rw.log("upload", `No map files have been written due to an existing file conflict.`);
-    cb(`One or more files contained inside the .zip file already existed in the maps folder. See the details below:\n\n${errors}`);
+    cb(new Error(`One or more files contained inside the .zip file already existed in the maps folder. See the details below:\n\n${errors}`));
     return;
   }
 
@@ -502,7 +533,6 @@ function writeModFiles(zipfile, entries, gameType, cb)
 
         readStream.on("error", function(err)
         {
-          console.log(`DEBUG: error during readstream`, err);
           //if error, add to error messages and continue looping
           errors.push(err);
           rw.log("upload", `Error occurred during readStream for file ${entry.fileName}:`, err);
@@ -550,13 +580,15 @@ function writeModFiles(zipfile, entries, gameType, cb)
 
 //We're not using a callback because if the execution fails, we'll just print it
 //to the bot log; the user doesn't need to know about it.
-function deleteTmpFile(fileId, cb)
+function deleteTmpFile(fileId)
 {
   let path = `${tmpPath}/${fileId}`;
 
+  rw.log("upload", `Deleting temp zipfile ${fileId}...`);
+
   if (fs.existsSync(`${path}.zip`) === false && fs.existsSync(path) === false)
   {
-    cb(null);
+    rw.log("upload", `Temp zipfile ${fileId} did not exist.`);
     return;
   }
 
@@ -569,14 +601,10 @@ function deleteTmpFile(fileId, cb)
   {
     if (err)
     {
-      console.log(`DEBUG: unlink err`, err);
-      rw.log("upload", `Failed to delete the temp zipfile ${fileId}:\n`, err);
-      cb(err);
-      return;
+      rw.log("upload", `Failed to delete the temp zipfile ${fileId}:\n\n${err.message}`);
     }
 
-    rw.log("upload", `Temp zipfile ${fileId} was successfully deleted.`);
-    cb(null);
+    else rw.log("upload", `Temp zipfile ${fileId} was successfully deleted.`);
   });
 }
 

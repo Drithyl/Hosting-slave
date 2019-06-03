@@ -170,8 +170,20 @@ socket.on("downloadMap", function(data, serverCb)
     return;
   }
 
+  //confirm that request is valid
+  serverCb();
+
   rw.log("upload", `Request to download map zipfile ${data.fileId} received.`);
-  downloader.downloadMap(data.fileId, data.gameType, serverCb);
+
+  downloader.downloadMap(data.fileId, data.gameType, function(response)
+  {
+    if (response.progress != null)
+    {
+      //socket.emit("downloadProgress", {progress: response.progress, fileId: data.fileId, token: config.token});
+    }
+
+    else socket.emit(`downloadResponse`, {...response, fileId: data.fileId, token: config.token});
+  });
 });
 
 socket.on("downloadMod", function(data, serverCb)
@@ -188,8 +200,20 @@ socket.on("downloadMod", function(data, serverCb)
     return;
   }
 
+  //confirm that request is valid
+  serverCb();
+
   rw.log("upload", `Request to download mod zipfile ${data.fileId} received.`);
-  downloader.downloadMod(data.fileId, data.gameType, serverCb);
+
+  downloader.downloadMod(data.fileId, data.gameType, function(response)
+  {
+    if (response.progress != null)
+    {
+      //socket.emit("downloadProgress", {progress: response.progress, fileId: data.fileId, token: config.token});
+    }
+
+    else socket.emit(`downloadResponse`, {...response, fileId: data.fileId, token: config.token});
+  });
 });
 
 
