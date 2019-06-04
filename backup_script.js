@@ -23,12 +23,12 @@ if (gameName == null)
 
 if (preexecRegex.test(type) === true)
 {
-  target += `${config.latestTurnBackupDirName}/${gameName}/`;
+  target += `${config.latestTurnBackupDirName}/${gameName}`;
 }
 
 else if (postexecRegex.test(type) === true)
 {
-  target += `${config.newTurnsBackupDirName}/${gameName}/`;
+  target += `${config.newTurnsBackupDirName}/${gameName}`;
 }
 
 else
@@ -61,11 +61,9 @@ if (postexecRegex.test(type) === true)
   turnInfo.turn++;
 }
 
-target += `Turn ${turnInfo.turn}`;
-
 try
 {
-  createDirsSync(target);
+  createDirsSync(`${target}/Turn ${turnInfo.turn}`);
 }
 
 catch(err)
@@ -83,9 +81,24 @@ try
     if (extensionsToBackupRegex.test(filename) === true)
     {
       let data = fs.readFileSync(`${source}/${filename}`);
-      fs.writeFileSync(`${target}/${filename}`, data);
+      fs.writeFileSync(`${target}/Turn ${turnInfo.turn}/${filename}`, data);
     }
   });
+
+  //delete previous backups according to the configuration
+  if (turnInfo.turn > config.nbrOfTurnsBackedUp)
+  {
+    if (fs.existsSync(`${target}/Turn ${turnInfo.turn - config.nbrOfTurnsBackedUp}`) === true)
+    {
+      rw.atomicRmDir(`${target}/Turn ${turnInfo.turn - config.nbrOfTurnsBackedUp}`, function(err)
+      {
+        if (err)
+        {
+          rw.log(["error", "backup"], `atomicRmDir() Error: ${err.message}`);
+        }
+      });
+    }
+  }
 }
 
 catch(err)
