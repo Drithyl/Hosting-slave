@@ -444,7 +444,7 @@ module.exports.getDirFilenames = function(path, extensionFilter, cb)
 
 module.exports.readDirContent = function(path, extensionFilter, cb)
 {
-	var data = {};
+	var list = [];
 
 	return new Promise((resolve, reject) =>
 	{
@@ -470,17 +470,17 @@ module.exports.readDirContent = function(path, extensionFilter, cb)
 			{
 				if (extensionFilter == null)
 				{
-					data[files[i]] = fs.readFileSync(path + "/" + files[i], "utf8");
+					list.push({filename: files[i], content: fs.readFileSync(path + "/" + files[i], "utf8")});
 				}
 
 				else if (files[i].slice(files[i].lastIndexOf(".")).toLowerCase() === extensionFilter.toLowerCase())
 				{
-					data[files[i]] = fs.readFileSync(path + "/" + files[i], "utf8");
+					list.push({filename: files[i], content: fs.readFileSync(path + "/" + files[i], "utf8")});
 				}
 			}
 
-			if (typeof cb === "function") cb(null, data);
-			else reject(null, data);
+			if (typeof cb === "function") cb(null, list);
+			else reject(null, list);
 		});
 	});
 };

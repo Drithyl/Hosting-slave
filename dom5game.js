@@ -21,7 +21,9 @@ module.exports.getModList = function(cb)
 
 module.exports.getMapList = function(cb)
 {
-  rw.readDirContent(`${config.dom5DataPath}/maps`, ".map", function(err, data)
+  let provCountList = [];
+
+  rw.readDirContent(config.dom5DataPath + "/maps", ".map", function(err, list)
   {
     if (err)
     {
@@ -29,19 +31,17 @@ module.exports.getMapList = function(cb)
       return;
     }
 
-    for (var filename in data)
+    list.forEach((file) =>
     {
-      var provinces = provCountFn(data[filename]);
+      let provs = provCountFn(file.content);
 
-      if (provinces == null)
+      if (provs != null)
       {
-        continue;
+        provCountList.push({name: file.filename, ...provs});
       }
+    });
 
-      data[filename] = provinces;
-    }
-
-    cb(null, data);
+    cb(null, provCountList);
   });
 };
 
