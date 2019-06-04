@@ -5,6 +5,7 @@ const rw = require("./reader_writer.js");
 const timerParser = require("./timer_parser.js");
 const preexecRegex = new RegExp("^\\-\\-preexec$", "i");
 const postexecRegex = new RegExp("^\\-\\-postexec$", "i");
+const extensionsToBackupRegex = new RegExp("(\.2h)|(\.trn)|(ftherlnd)$", "i");
 
 var gameName = process.argv[2];
 var type = process.argv[3];
@@ -79,8 +80,11 @@ try
 
   filenames.forEach((filename) =>
   {
-    let data = fs.readFileSync(`${source}/${filename}`);
-    fs.writeFileSync(`${target}/${filename}`, data);
+    if (extensionsToBackupRegex.test(filename) === true)
+    {
+      let data = fs.readFileSync(`${source}/${filename}`);
+      fs.writeFileSync(`${target}/${filename}`, data);
+    }
   });
 }
 
