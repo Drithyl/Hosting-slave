@@ -12,6 +12,7 @@
 
   "maxMapSizeInMB": 100,
   "maxModSizeInMB": 15,
+  "nbrOfTurnsBackedUp": 5,
 
   "token": "",
   "capacity": 20,
