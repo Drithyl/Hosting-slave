@@ -253,7 +253,7 @@ module.exports.getFileStream = function(fileId, path, callback)
 //Directly downloads the file into the given path using a WriteStream (specified in responseType)
 //fileId is the fileId that can be found in the Get Shareable Link option of the google drive website when right clicking a file
 //The link itself contains the ID
-module.exports.downloadFile = function(fileId, downloadPath, updateCb)
+module.exports.downloadFile = function(fileId, downloadPath, cb)
 {
   //added to make sure the initialization of authorize() finished before handling requests
   if (wasInitialized === false)
@@ -285,7 +285,7 @@ module.exports.downloadFile = function(fileId, downloadPath, updateCb)
     */
     if (err)
     {
-      updateCb(err);
+      cb(err);
       return;
     }
 
@@ -294,7 +294,7 @@ module.exports.downloadFile = function(fileId, downloadPath, updateCb)
     //add ReadStream handlers
     readStream.on('error', (err) => {
       rw.log("upload", "ReadStream error:", err);
-      updateCb(err);
+      cb(err);
     });
 
     readStream.on('end', () => {
@@ -308,7 +308,7 @@ module.exports.downloadFile = function(fileId, downloadPath, updateCb)
 
     readStream.on("data", (chunk) =>
     {
-      updateCb(null, null, Buffer.byteLength(chunk))
+      cb(null, null, Buffer.byteLength(chunk))
     });
 
     //make sure the dest Writable is safe to write (i.e. no error occurred)
@@ -322,14 +322,14 @@ module.exports.downloadFile = function(fileId, downloadPath, updateCb)
       .on("error", (err) =>
       {
         rw.log("upload", "WriteStream error:", err);
-        updateCb(err);
+        cb(err);
       })
       .on("finish", () =>
       {
         rw.log("upload", "WriteStream finished.");
 
         //Finished, so return 100 (%)
-        updateCb(null, true);
+        cb(null, true);
       })
       .on("close", () =>
       {
