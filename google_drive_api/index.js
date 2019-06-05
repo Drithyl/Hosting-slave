@@ -78,6 +78,7 @@
 ********************************************************************************************************************************************************/
 
 const fs = require('fs');
+const rw = require("../reader_writer.js");
 const readline = require('readline');
 const {google} = require('googleapis');
 const CREDENTIALS_PATH = "./google_drive_api/credentials.json";
@@ -252,7 +253,7 @@ module.exports.getFileStream = function(fileId, path, callback)
 //Directly downloads the file into the given path using a WriteStream (specified in responseType)
 //fileId is the fileId that can be found in the Get Shareable Link option of the google drive website when right clicking a file
 //The link itself contains the ID
-module.exports.downloadFile = function(fileId, downloadPath, callback)
+module.exports.downloadFile = function(fileId, downloadPath, updateCb)
 {
   //added to make sure the initialization of authorize() finished before handling requests
   if (wasInitialized === false)
@@ -262,13 +263,7 @@ module.exports.downloadFile = function(fileId, downloadPath, callback)
   }
 
   const drive = google.drive({version:"v3", oAuth2Object});
-  var dest = fs.createWriteStream(downloadPath);
-
-  dest.on('error', function(err) {
-    dest.end();
-    callback(err);
-    return;
-  });
+  var writeStream = fs.createWriteStream(downloadPath);
 
   //get file as a stream, then
   //auth must be passed as option with the oAuth2 object that was obtained in the initialization
@@ -290,18 +285,67 @@ module.exports.downloadFile = function(fileId, downloadPath, callback)
     */
     if (err)
     {
-      callback(err);
+      updateCb(err);
       return;
     }
 
-    response.data
-    .on('error', err => {
-        callback(err);
-    })
-    .on('end', () => {
-        callback();
-    })
-    .pipe(dest);
+    let readStream = response.data;
+
+    //add ReadStream handlers
+    readStream.on('error', (err) => {
+      rw.log("upload", "ReadStream error:", err);
+      updateCb(err);
+    });
+
+    readStream.on('end', () => {
+      rw.log("upload", "ReadStream ended.");
+    });
+
+    readStream.on("close", () =>
+    {
+      rw.log("upload", `ReadStream closed.`);
+    });
+
+    readStream.on("data", (chunk) =>
+    {
+      updateCb(null, null, Buffer.byteLength(chunk))
+    });
+
+    //make sure the dest Writable is safe to write (i.e. no error occurred)
+    if (writeStream.writable === true)
+    {
+      rw.log("upload", "WriteStream is writable. Piping ReadStream into it.");
+
+      //pipe response readable stream into our writestream. This returns the
+      //writestream object so we can chain writestream event handlers into it
+      readStream.pipe(writeStream)
+      .on("error", (err) =>
+      {
+        rw.log("upload", "WriteStream error:", err);
+        updateCb(err);
+      })
+      .on("finish", () =>
+      {
+        rw.log("upload", "WriteStream finished.");
+
+        //Finished, so return 100 (%)
+        updateCb(null, true);
+      })
+      .on("close", () =>
+      {
+        rw.log("upload", "WriteStream closed.");
+      })
+      .on("drain", () =>
+      {
+
+      });
+    }
+
+    else
+    {
+      rw.log("upload", "WriteStream is not in a writable state. Cannot pipe ReadStream into it.");
+      finishCb(new Error("WriteStream is not in a writable state. Cannot pipe ReadStream into it."));
+    }
   });
 };
 
