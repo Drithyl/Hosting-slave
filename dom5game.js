@@ -223,9 +223,8 @@ module.exports.restart = function(data, cb)
 module.exports.changeCurrentTimer = function(data, cb)
 {
   var path = `${config.dom5DataPath}/savedgames/${games[data.port].name}/domcmd`;
-  var timer = timerParser.getTotalSeconds(data.timer);
 
-  fs.writeFile(path, "settimeleft " + timer, function(err)
+  fs.writeFile(path, "settimeleft " + data.timer, function(err)
   {
     if (err)
     {
@@ -243,7 +242,7 @@ module.exports.changeCurrentTimer = function(data, cb)
 module.exports.changeDefaultTimer = function(data, cb)
 {
   var path = `${config.dom5DataPath}/savedgames/${games[data.port].name}/domcmd`;
-  var domcmd = `setinterval ${Math.floor(timerParser.getTotalSeconds(data.timer) / 60)}\n`;
+  var domcmd = `setinterval ${data.timer}\n`;
 
   //set currentTimer to what it was again, because setinterval changes the
   //current timer as well

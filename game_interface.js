@@ -205,7 +205,7 @@ module.exports.freezeGames = function()
       }
 
       rw.log("general", `Freezing ${game.name}'s timer...`);
-      game.frozenTimer = timerParser.getTotalSeconds(timer);
+      game.frozenTimer = timer.totalSeconds;
 
       //pause timer
       timer.isPaused = true;
@@ -220,7 +220,7 @@ module.exports.freezeGames = function()
         //the bot is down the timer will no longer be frozen and will tick
         //down without any announcements having been made. changeDefaultTimer
         //will also change the current timer if no currentTimer option is provided
-        handlers[port].call.changeDefaultTimer({port: port, timer: timer}, function(err)
+        handlers[port].call.changeDefaultTimer({port: port, timer: timer.totalMinutes}, function(err)
         {
           if (err)
           {
@@ -235,7 +235,7 @@ module.exports.freezeGames = function()
 
       else
       {
-        handlers[port].call.changeCurrentTimer({port: port, timer: timer}, function(err)
+        handlers[port].call.changeCurrentTimer({port: port, timer: timer.totalSeconds}, function(err)
         {
           if (err)
           {
