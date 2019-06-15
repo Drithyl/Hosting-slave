@@ -376,7 +376,7 @@ module.exports.getStales = function(data, cb)
 
     //Not a stale, since the last modified time of the file is more recent than the last turn hosted
     //or the controller is an AI, not a human
-    if (dump[files[i]].controller != 1 || dump[files[i]].turnPlayed === 1 || dump[files[i]].turnPlayed === 1 || stats.mtime.getTime() >= data.lastHostedTime)
+    if (dump[files[i]].controller != 1 || dump[files[i]].turnPlayed === 1 || dump[files[i]].turnPlayed === 2 || stats.mtime.getTime() >= data.lastHostedTime)
     {
       continue;
     }
