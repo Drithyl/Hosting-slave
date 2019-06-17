@@ -518,3 +518,21 @@ socket.on("deleteV2Data", function(data, serverCb)
 {
   v2Converter.deleteV2Data(data, serverCb);
 });
+
+//will get called when an error will cause node to crash
+//this way it can be properly logged
+process.on("uncaughtException", (err, origin) =>
+{
+  fs.appendFileSync(
+    config.errorLogPath,
+    `\n\n####################\n\n` +
+    `${rw.timestamp()}\n` +
+    `Caught exception:\n${err}\n` +
+    `Exception origin:\n${origin}\n\n` +
+    `####################\n\n`
+  );
+
+  throw err;
+});
+
+unknownFn();
