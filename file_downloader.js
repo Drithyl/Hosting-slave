@@ -299,6 +299,8 @@ function getZipfile(fileId, cb, updateCb)
       }
     }
 
+    rw.log("upload", `Zipfile downloaded, opening it...`);
+
     //cb finished
     else if (isDone === true)
     {
@@ -308,6 +310,7 @@ function getZipfile(fileId, cb, updateCb)
       {
         if (err)
         {
+          rw.log(["upload", "error"], `Error occurred when opening ${fileId}:\n\n${err.message}`);
           cb(err);
           return;
         }

@@ -523,13 +523,17 @@ socket.on("deleteV2Data", function(data, serverCb)
 //this way it can be properly logged
 process.on("uncaughtException", (err, origin) =>
 {
+  let message = `\n\n####################\n\n` +
+  `${rw.timestamp()}\n` +
+  `Caught exception:\n${err}\n` +
+  `Exception origin:\n${origin}\n\n` +
+  `####################\n\n`;
+
+  console.log(message);
+
   fs.appendFileSync(
     config.errorLogPath,
-    `\n\n####################\n\n` +
-    `${rw.timestamp()}\n` +
-    `Caught exception:\n${err}\n` +
-    `Exception origin:\n${origin}\n\n` +
-    `####################\n\n`
+    message
   );
 
   throw err;
