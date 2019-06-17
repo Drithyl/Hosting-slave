@@ -534,5 +534,3 @@ process.on("uncaughtException", (err, origin) =>
 
   throw err;
 });
-
-unknownFn();
