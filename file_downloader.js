@@ -302,7 +302,7 @@ function getZipfile(fileId, cb, updateCb)
     rw.log("upload", `Zipfile downloaded, opening it...`);
 
     //cb finished
-    else if (isDone === true)
+    if (isDone === true)
     {
       rw.log("upload", `File ${fileId}.zip downloaded. Using yauzl to open it...`);
 
