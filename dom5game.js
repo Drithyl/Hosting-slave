@@ -349,6 +349,7 @@ module.exports.getStales = function(data, cb)
   {
     var stats;
     var filename = files[i];
+    var nationDump = dump[files[i]];
 
     if (filename.slice(filename.indexOf(".")) !== ".2h")
     {
@@ -365,6 +366,18 @@ module.exports.getStales = function(data, cb)
       rw.log("error", true, {data: data, path: `${config.dom5DataPath}/savedgames/${game.name}/${filename}`, err: err});
       cb(`An error occurred while checking the stats of the file ${filename} for stales for the game ${game.name}.`);
       return;
+    }
+
+    if (nationDump == null)
+    {
+      rw.log("error", `##########\n\nThe statusdump information of the game ${game.name} for nation ${files[i]} cannot be found. Here is the full statusdump:\n\n`, dump);
+      continue;
+    }
+
+    else if (nationDump.controller == null || nationDump.nationName == null || nationDump.turnPlayed == null)
+    {
+      rw.log("error", `##########\n\nThe statusdump information of the game ${game.name} for nation ${files[i]} is missing a property. Here is the full nation's dump:\n\n`, nationDump);
+      continue;
     }
 
     //A 2 in the controller of the nation means that the nation just went AI this processed turn
@@ -535,7 +548,7 @@ function parseDump(name)
     var nationFullName = nationFilenameStart.slice(nationFilenameStart.search(/\s+/)).trim().replace("\t", ", ");
     dumpObj[nationFilename] = {};
     lineNumbers = lines[i].match(/\-?\d+/g);
-    dumpObj[nationFilename].filename = `${nationFilename}.2h`;
+    dumpObj[nationFilename].filename = nationFilename;
 
     dumpObj[nationFilename].nationFullName = nationFullName;
     dumpObj[nationFilename].nationName = nationFullName.slice(0, nationFullName.indexOf(","));
